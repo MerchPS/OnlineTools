@@ -5,115 +5,359 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TikTok & YouTube Downloader</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    body {
-      background: linear-gradient(to right, #1e3c72, #2a5298);
-      min-height: 100vh;
+    :root {
+      --primary-dark: #1e3c72;
+      --secondary-dark: #2a5298;
+      --primary-light: #f8fafc;
+      --secondary-light: #e2e8f0;
     }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      transition: all 0.3s ease;
+    }
+    
+    .dark {
+      background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+      color: white;
+    }
+    
+    .light {
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+      color: #1e293b;
+    }
+    
     .glass {
       background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
       border-radius: 1rem;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
     }
+    
+    .glass-light {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border-radius: 1rem;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    
     .fade-in {
-      animation: fadeIn 1.5s ease-in;
+      animation: fadeIn 1s ease-in;
     }
+    
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5);
+    }
+    
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #3b82f6;
+      background-color: #3b82f6;
+    }
+    
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #3b82f6;
+    }
+    
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+    }
+    
+    .status-ok {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+    }
+    
+    .status-fail {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+    
+    .status-wait {
+      background-color: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+    
+    .pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .download-btn {
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
-<body class="flex flex-col items-center justify-center p-4 text-white space-y-6">
-
-  <div class="max-w-xl w-full glass p-6 fade-in">
-    <h1 class="text-3xl font-bold mb-4 text-center">TikTok & YouTube Downloader</h1>
-
-    <div class="text-center mb-4">
-      <h2 class="text-lg font-semibold">Supported Links:</h2>
-      <p id="support-status">⏳ Checking API status...</p>
+<body class="dark flex flex-col items-center justify-center p-4 space-y-6">
+  <div class="max-w-2xl w-full glass glass-light dark:glass p-8 fade-in">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TikTok & YouTube Downloader</h1>
+      
+      <div class="flex items-center">
+        <span class="mr-2 text-sm font-medium dark:text-gray-300 text-gray-600">Dark</span>
+        <div class="relative inline-block w-12 mr-2 align-middle select-none">
+          <input type="checkbox" id="toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-200"/>
+          <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-all duration-200"></label>
+        </div>
+        <span class="text-sm font-medium dark:text-gray-300 text-gray-600">Light</span>
+      </div>
     </div>
 
-    <input id="url-input" type="text" placeholder="Paste TikTok or YouTube URL here..." class="w-full p-3 rounded text-black mb-4" />
-    <button onclick="handleDownload()" class="bg-blue-600 hover:bg-blue-700 w-full p-3 rounded mb-6">Process</button>
+    <div class="text-center mb-6">
+      <h2 class="text-lg font-semibold mb-2 dark:text-gray-300 text-gray-700">Supported Platforms</h2>
+      <div class="flex flex-wrap justify-center gap-2">
+        <span class="status-indicator status-wait pulse" id="tiktok-status">
+          <span id="tiktok-emoji">⏳</span> TikTok MP3
+        </span>
+        <span class="status-indicator status-wait pulse" id="yt-mp3-status">
+          <span id="yt-mp3-emoji">⏳</span> YouTube MP3
+        </span>
+        <span class="status-indicator status-wait pulse" id="yt-mp4-status">
+          <span id="yt-mp4-emoji">⏳</span> YouTube MP4
+        </span>
+      </div>
+    </div>
 
-    <div id="loading" class="hidden text-center text-yellow-300 mb-4">Fetching media... Please wait.</div>
+    <div class="relative mb-6">
+      <input 
+        id="url-input" 
+        type="text" 
+        placeholder="Paste TikTok or YouTube URL here..." 
+        class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-gray-800 pr-12 transition-all duration-200"
+      />
+      <button 
+        onclick="handleDownload()" 
+        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-all duration-200"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+
+    <div id="loading" class="hidden text-center mb-6">
+      <div class="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+        <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Processing your request...</span>
+      </div>
+    </div>
 
     <div id="result" class="hidden">
-      <img id="cover" class="rounded mb-4 w-full" />
-      <h2 id="title" class="text-xl font-semibold mb-2"></h2>
-      <div class="flex flex-col gap-4 mb-4" id="buttons"></div>
+      <div class="relative group">
+        <img id="cover" class="rounded-xl w-full h-64 object-cover mb-4 transition-all duration-300 group-hover:opacity-90" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+          <h2 id="title" class="text-white text-xl font-bold"></h2>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" id="buttons"></div>
     </div>
 
-    <div id="error" class="text-red-400 hidden">Failed to fetch media. Please check the URL.</div>
+    <div id="error" class="hidden p-4 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-center">
+      <div class="flex items-center justify-center space-x-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <span>Failed to process the URL. Please check and try again.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+    Made with ❤️ using HTML, CSS & JavaScript
   </div>
 
   <script>
+    // Theme toggle functionality
+    const toggle = document.getElementById('toggle');
+    const body = document.body;
+    
+    // Check for saved theme preference or use preferred color scheme
+    if (localStorage.getItem('theme') === 'light' || 
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      body.classList.remove('dark');
+      body.classList.add('light');
+      toggle.checked = true;
+    }
+    
+    toggle.addEventListener('change', function() {
+      if (this.checked) {
+        body.classList.remove('dark');
+        body.classList.add('light');
+        localStorage.setItem('theme', 'light');
+      } else {
+        body.classList.remove('light');
+        body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
     // SweetAlert2 Pop-up Changelog
     window.addEventListener('load', async () => {
       Swal.fire({
-        title: '🆕 Update Changelog',
+        title: '✨ What\'s New',
         html: `
-          <div style="text-align: left; font-size: 14px; color: black;">
-            <ul style="margin-bottom: 10px; list-style: disc; padding-left: 20px;">
-              <li>Added auto API status detection with emojis</li>
-              <li>Improved loading indicators</li>
-              <li>Support TikTok MP3 and YouTube MP3/MP4</li>
-              <li>Cleaner interface & error handling</li>
-              <li>Clipboard auto-paste feature</li>
-            </ul>
-            <hr style="border: 1px solid #ccc; margin: 10px 0;">
-            <b>Status Info:</b><br>
-            ✅ = API Normal<br>
-            ❌ = API Down<br>
-            ⏳ = Checking or Slow Response<br><br>
-            <em style="color: gray;">Note: YouTube MP3 & MP4 API may be slow.</em>
+          <div style="text-align: left; font-size: 14px; color: inherit;">
+            <div class="mb-4">
+              <h3 class="font-bold text-lg mb-2">Latest Features</h3>
+              <ul class="space-y-2">
+                <li class="flex items-start">
+                  <span class="mr-2">🎨</span>
+                  <span>Dark & Light mode with automatic detection</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">⚡</span>
+                  <span>Improved API status indicators with real-time checks</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">🔗</span>
+                  <span>Smart URL detection and clipboard auto-paste</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="mr-2">🎵</span>
+                  <span>Support for TikTok MP3 and YouTube MP3/MP4</span>
+                </li>
+              </ul>
+            </div>
+            <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <h4 class="font-bold mb-1">API Status Guide</h4>
+              <div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span> Operational</div>
+              <div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full bg-red-500 mr-2"></span> Not Working</div>
+              <div class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-yellow-500 mr-2"></span> Checking/Slow</div>
+            </div>
           </div>
         `,
         showConfirmButton: false,
         showCloseButton: true,
-        background: "#ffffff",
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdrop: 'rgba(0, 0, 0, 0.4)',
         customClass: {
-          popup: 'rounded-lg shadow-lg'
+          popup: 'rounded-xl shadow-2xl dark:bg-gray-800 dark:text-white',
+          closeButton: 'dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
         }
       });
 
       // Auto paste from clipboard
       try {
         const text = await navigator.clipboard.readText();
-        if (text.includes('tiktok.com') || text.includes('youtube.com')) {
+        if (text.includes('tiktok.com') || text.includes('youtube.com') || text.includes('youtu.be')) {
           document.getElementById('url-input').value = text;
+          // Show a subtle notification
+          const toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+          toast.fire({
+            icon: 'info',
+            title: 'URL pasted from clipboard'
+          });
         }
       } catch (err) {
         console.warn('Clipboard access denied.');
       }
 
-      // Cek status API
+      // Check API status
       checkApiStatus();
     });
 
     async function checkApiStatus() {
-  const statusEl = document.getElementById('support-status');
-  const emojis = { ok: '✅', fail: '❌', wait: '⏳' };
-  statusEl.innerHTML = `${emojis.wait} TikTok → MP3 | ${emojis.wait} YouTube → MP3 | ${emojis.wait} YouTube → MP4`;
-
-  // Generate URL berbeda-beda biar gak kebaca aktif terus
-  const randomId = Math.floor(Math.random() * 1000000);
-  const tiktokURL = `https://www.tiktok.com/@scvideo/video/${randomId}`;
-  const youtubeURL = `https://www.youtube.com/watch?v=dQw4w9WgX${randomId.toString().slice(0, 2)}`; // bikin ID seolah beda
-
-  let [tiktok, ytMp3, ytMp4] = await Promise.all([
-    fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(tiktokURL)}`)
-      .then(res => res.json().then(data => data.data ? emojis.ok : emojis.fail)).catch(() => emojis.fail),
-    fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(youtubeURL)}`)
-      .then(res => res.json().then(data => data.status ? emojis.ok : emojis.fail)).catch(() => emojis.fail),
-    fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(youtubeURL)}`)
-      .then(res => res.json().then(data => data.status ? emojis.ok : emojis.fail)).catch(() => emojis.fail)
-  ]);
-
-  statusEl.innerHTML = `${tiktok} TikTok → MP3 | ${ytMp3} YouTube → MP3 | ${ytMp4} YouTube → MP4`;
-}
+      const emojis = { ok: '✅', fail: '❌', wait: '⏳' };
+      
+      // Generate different URLs to avoid caching
+      const randomId = Math.floor(Math.random() * 1000000);
+      const tiktokURL = `https://www.tiktok.com/@scvideo/video/${randomId}`;
+      const youtubeURL = `https://www.youtube.com/watch?v=dQw4w9WgX${randomId.toString().slice(0, 2)}`;
+      
+      try {
+        const [tiktokRes, ytMp3Res, ytMp4Res] = await Promise.allSettled([
+          fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(tiktokURL)}`),
+          fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(youtubeURL)}`),
+          fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(youtubeURL)}`)
+        ]);
+        
+        // Update TikTok status
+        updateStatus(
+          'tiktok-status', 
+          'tiktok-emoji',
+          tiktokRes.status === 'fulfilled' && tiktokRes.value.ok,
+          'TikTok MP3'
+        );
+        
+        // Update YouTube MP3 status
+        updateStatus(
+          'yt-mp3-status', 
+          'yt-mp3-emoji',
+          ytMp3Res.status === 'fulfilled' && ytMp3Res.value.ok,
+          'YouTube MP3'
+        );
+        
+        // Update YouTube MP4 status
+        updateStatus(
+          'yt-mp4-status', 
+          'yt-mp4-emoji',
+          ytMp4Res.status === 'fulfilled' && ytMp4Res.value.ok,
+          'YouTube MP4'
+        );
+        
+      } catch (error) {
+        console.error('Error checking API status:', error);
+      }
+    }
+    
+    function updateStatus(elementId, emojiId, isOk, text) {
+      const element = document.getElementById(elementId);
+      const emoji = document.getElementById(emojiId);
+      
+      element.classList.remove('status-wait', 'status-ok', 'status-fail', 'pulse');
+      
+      if (isOk) {
+        element.classList.add('status-ok');
+        emoji.textContent = '✅';
+        element.title = `${text} API is operational`;
+      } else {
+        element.classList.add('status-fail');
+        emoji.textContent = '❌';
+        element.title = `${text} API is not working`;
+      }
+    }
 
     async function handleDownload() {
       const url = document.getElementById('url-input').value.trim();
@@ -124,6 +368,18 @@
       const buttonsDiv = document.getElementById('buttons');
       const loading = document.getElementById('loading');
 
+      // Validate URL
+      if (!url) {
+        showError('Please enter a URL');
+        return;
+      }
+      
+      if (!url.includes('tiktok.com') && !url.includes('youtube.com') && !url.includes('youtu.be')) {
+        showError('Please enter a valid TikTok or YouTube URL');
+        return;
+      }
+
+      // Reset UI
       resultDiv.classList.add('hidden');
       errorDiv.classList.add('hidden');
       loading.classList.remove('hidden');
@@ -131,56 +387,122 @@
 
       try {
         let response, res;
+        
         if (url.includes('tiktok.com')) {
+          // TikTok processing
           response = await fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(url)}`);
           res = await response.json();
-          if (!res.data || !res.data.music_info) throw new Error();
+          
+          if (!res.data || !res.data.music_info) {
+            throw new Error('Invalid TikTok response');
+          }
 
+          // Update UI with TikTok data
           coverImg.src = res.data.cover;
-          titleText.textContent = res.data.title;
+          coverImg.alt = res.data.title;
+          titleText.textContent = res.data.title || 'TikTok Audio';
 
-          const btn = document.createElement('a');
-          btn.textContent = 'Download MP3';
-          btn.className = 'bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-center';
-          btn.href = res.data.music_info.url;
-          btn.setAttribute('download', '');
-          buttonsDiv.appendChild(btn);
+          // Create download button
+          createDownloadButton(
+            buttonsDiv,
+            'Download MP3',
+            res.data.music_info.url,
+            'bg-gradient-to-r from-pink-500 to-rose-500',
+            'music'
+          );
 
-        } else if (url.includes('youtube.com')) {
+        } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+          // YouTube processing
           response = await fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(url)}`);
           res = await response.json();
-          if (!res.result || !res.result.title) throw new Error();
+          
+          if (!res.result || !res.result.title) {
+            throw new Error('Invalid YouTube response');
+          }
 
-          coverImg.src = res.result.thumbnail;
+          // Update UI with YouTube data
+          coverImg.src = res.result.thumbnail || 'https://i.ytimg.com/vi/default.jpg';
+          coverImg.alt = res.result.title;
           titleText.textContent = res.result.title;
 
-          const mp3Btn = document.createElement('a');
-          mp3Btn.href = res.result.url;
-          mp3Btn.className = 'bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-center';
-          mp3Btn.textContent = 'Download MP3';
-          mp3Btn.setAttribute('download', '');
-          buttonsDiv.appendChild(mp3Btn);
+          // Create MP3 download button
+          createDownloadButton(
+            buttonsDiv,
+            'Download MP3',
+            res.result.url,
+            'bg-gradient-to-r from-green-500 to-emerald-500',
+            'music'
+          );
 
-          const mp4Res = await fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(url)}`);
-          const mp4Json = await mp4Res.json();
-
-          const mp4Btn = document.createElement('a');
-          mp4Btn.href = mp4Json.result.url;
-          mp4Btn.className = 'bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-center';
-          mp4Btn.textContent = 'Download MP4';
-          mp4Btn.setAttribute('download', '');
-          buttonsDiv.appendChild(mp4Btn);
-        } else {
-          throw new Error();
+          // Get MP4 version
+          try {
+            const mp4Res = await fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(url)}`);
+            const mp4Json = await mp4Res.json();
+            
+            if (mp4Json.result?.url) {
+              createDownloadButton(
+                buttonsDiv,
+                'Download MP4',
+                mp4Json.result.url,
+                'bg-gradient-to-r from-blue-500 to-indigo-500',
+                'video'
+              );
+            }
+          } catch (e) {
+            console.error('Failed to get MP4 version:', e);
+          }
         }
 
+        // Show result
         resultDiv.classList.remove('hidden');
+        
       } catch (e) {
-        errorDiv.classList.remove('hidden');
-        console.error(e);
+        console.error('Error processing URL:', e);
+        showError('Failed to process the URL. Please try again later.');
       } finally {
         loading.classList.add('hidden');
       }
+    }
+    
+    function createDownloadButton(container, text, url, colorClasses, iconType) {
+      const btn = document.createElement('a');
+      btn.className = `download-btn ${colorClasses} text-white p-3 rounded-lg flex items-center justify-center space-x-2 font-medium`;
+      btn.href = url;
+      btn.target = '_blank';
+      btn.rel = 'noopener noreferrer';
+      
+      const icon = document.createElement('span');
+      if (iconType === 'music') {
+        icon.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" />
+          </svg>
+        `;
+      } else {
+        icon.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z" />
+          </svg>
+        `;
+      }
+      
+      const btnText = document.createElement('span');
+      btnText.textContent = text;
+      
+      btn.appendChild(icon);
+      btn.appendChild(btnText);
+      container.appendChild(btn);
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.querySelector('span').textContent = message;
+      errorDiv.classList.remove('hidden');
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        errorDiv.classList.add('hidden');
+      }, 5000);
     }
   </script>
 </body>
