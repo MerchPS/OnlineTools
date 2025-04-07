@@ -31,7 +31,7 @@
 
     <div class="text-center mb-4">
       <h2 class="text-lg font-semibold">Supported Links:</h2>
-      <p>✅ TikTok → MP3 | ✅ YouTube → MP3 | ✅ YouTube → MP4</p>
+      <p id="support-status">⏳ Checking API status...</p>
     </div>
 
     <input id="url-input" type="text" placeholder="Paste TikTok or YouTube URL here..." class="w-full p-3 rounded text-black mb-4" />
@@ -49,6 +49,38 @@
   </div>
 
   <script>
+    async function checkApiStatus() {
+      const statusEl = document.getElementById('support-status');
+      const emojis = { ok: '✅', fail: '❌', wait: '⏳' };
+      statusEl.innerHTML = `${emojis.wait} TikTok → MP3 | ${emojis.wait} YouTube → MP3 | ${emojis.wait} YouTube → MP4`;
+
+      const updateStatus = (index, emoji) => {
+        let parts = statusEl.innerHTML.split('|');
+        parts[index] = parts[index].replace(/^[^ ]+/, emoji);
+        statusEl.innerHTML = parts.join('|');
+      };
+
+      try {
+        const tiktok = await fetch('https://api.agatz.xyz/api/tiktok?url=https://www.tiktok.com/@scvideo/video/123456');
+        const tj = await tiktok.json();
+        updateStatus(0, tj.data ? emojis.ok : emojis.fail);
+      } catch { updateStatus(0, emojis.fail); }
+
+      try {
+        const ytmp3 = await fetch('https://api.agatz.xyz/api/ytmp3?url=https://www.youtube.com/watch?v=FVhV9s34c5c');
+        const yj = await ytmp3.json();
+        updateStatus(1, Array.isArray(yj.data) ? emojis.ok : emojis.fail);
+      } catch { updateStatus(1, emojis.fail); }
+
+      try {
+        const yt = await fetch('https://api.agatz.xyz/api/ytmp4?url=https://www.youtube.com/watch?v=FVhV9s34c5c');
+        const ym = await yt.json();
+        updateStatus(2, ym.data && ym.data.downloadUrl ? emojis.ok : emojis.fail);
+      } catch { updateStatus(2, emojis.fail); }
+    }
+
+    checkApiStatus();
+
     async function handleDownload() {
       const url = document.getElementById('url-input').value.trim();
       const resultDiv = document.getElementById('result');
@@ -156,6 +188,12 @@
         });
       }
     }
+
+    document.getElementById("url-input").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        handleDownload();
+      }
+    });
   </script>
 </body>
 </html>
