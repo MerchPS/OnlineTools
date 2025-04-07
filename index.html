@@ -37,10 +37,12 @@
     <input id="url-input" type="text" placeholder="Paste TikTok or YouTube URL here..." class="w-full p-3 rounded text-black mb-4" />
     <button onclick="handleDownload()" class="bg-blue-600 hover:bg-blue-700 w-full p-3 rounded mb-6">Process</button>
 
+    <div id="loading" class="hidden text-center text-yellow-300 mb-4">Fetching media... Please wait.</div>
+
     <div id="result" class="hidden">
       <img id="cover" class="rounded mb-4 w-full" />
       <h2 id="title" class="text-xl font-semibold mb-2"></h2>
-      <div class="flex gap-4 mb-4" id="buttons"></div>
+      <div class="flex flex-col gap-4 mb-4" id="buttons"></div>
     </div>
 
     <div id="error" class="text-red-400 hidden">Failed to fetch media. Please check the URL.</div>
@@ -54,9 +56,11 @@
       const coverImg = document.getElementById('cover');
       const titleText = document.getElementById('title');
       const buttonsDiv = document.getElementById('buttons');
+      const loading = document.getElementById('loading');
 
       resultDiv.classList.add('hidden');
       errorDiv.classList.add('hidden');
+      loading.classList.remove('hidden');
       buttonsDiv.innerHTML = '';
 
       try {
@@ -70,10 +74,9 @@
 
           title = res.data.title;
           cover = res.data.cover;
-          downloads.push({ url: res.data.music_info.url, label: 'Download MP3', format: 'mp3' });
+          downloads.push({ url: res.data.music_info.url, label: 'Download MP3', format: 'mp3', type: 'blob' });
 
         } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-          // MP3 fetch
           const ytmp3 = await fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(url)}`);
           const mp3res = await ytmp3.json();
           if (!mp3res.data || !Array.isArray(mp3res.data)) throw new Error();
@@ -82,15 +85,15 @@
           downloads = mp3res.data.map(item => ({
             url: item.downloadUrl,
             label: `MP3 ${item.quality}`,
-            format: 'mp3'
+            format: 'mp3',
+            type: 'blob'
           }));
 
-          // MP4 fetch
           const ytmp4 = await fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(url)}`);
           const mp4res = await ytmp4.json();
           if (mp4res.data && mp4res.data.downloadUrl) {
             cover = mp4res.data.image;
-            downloads.push({ url: mp4res.data.downloadUrl, label: 'Download MP4', format: 'mp4' });
+            downloads.push({ url: mp4res.data.downloadUrl, label: 'Download MP4', format: 'mp4', type: 'direct' });
           }
 
         } else {
@@ -104,7 +107,13 @@
           const btn = document.createElement('button');
           btn.textContent = item.label;
           btn.className = 'bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded';
-          btn.onclick = () => downloadFile(item.url, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${item.format}`, item.format);
+          btn.onclick = () => {
+            if (item.type === 'direct') {
+              window.open(item.url, '_blank');
+            } else {
+              downloadFile(item.url, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${item.format}`, item.format);
+            }
+          };
           buttonsDiv.appendChild(btn);
         });
 
@@ -112,6 +121,8 @@
       } catch (e) {
         errorDiv.classList.remove('hidden');
         console.error(e);
+      } finally {
+        loading.classList.add('hidden');
       }
     }
 
