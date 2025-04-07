@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Downloader - MP4 & MP3</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      min-height: 100vh;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+    }
+    .fade-in {
+      animation: fadeIn 1.5s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4 text-white">
+  <div class="max-w-xl w-full glass p-6 fade-in">
+    <h1 class="text-3xl font-bold mb-4 text-center">TikTok Downloader</h1>
+    <input id="tiktok-url" type="text" placeholder="Paste TikTok URL here..." class="w-full p-3 rounded text-black mb-4" />
+    <button onclick="fetchTikTok()" class="bg-blue-600 hover:bg-blue-700 w-full p-3 rounded mb-6">Download</button>
+    <div id="result" class="hidden">
+      <img id="cover" class="rounded mb-4 w-full" />
+      <h2 id="title" class="text-xl font-semibold mb-2"></h2>
+      <div class="flex gap-4 mb-4">
+        <a id="mp4-hd" href="#" target="_blank" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Download MP4 (HD)</a>
+        <a id="mp3" href="#" target="_blank" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">Download MP3</a>
+      </div>
+    </div>
+    <div id="error" class="text-red-400 hidden">Failed to fetch video. Please check the URL.</div>
+  </div>
+
+  <script>
+    async function fetchTikTok() {
+      const url = document.getElementById('tiktok-url').value.trim();
+      const resultDiv = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+
+      resultDiv.classList.add('hidden');
+      errorDiv.classList.add('hidden');
+
+      try {
+        const response = await fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(url)}`);
+        const res = await response.json();
+
+        if (!res.data || !res.data.data) {
+          throw new Error("Invalid response");
+        }
+
+        const { title, cover, data, music_info } = res.data;
+
+        document.getElementById('cover').src = cover;
+        document.getElementById('title').textContent = title;
+        document.getElementById('mp4-hd').href = data.find(v => v.type === 'nowatermark_hd')?.url || '#';
+        document.getElementById('mp3').href = music_info?.url || '#';
+
+        resultDiv.classList.remove('hidden');
+      } catch (e) {
+        errorDiv.classList.remove('hidden');
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>
