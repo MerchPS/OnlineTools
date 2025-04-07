@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TikTok Downloader - MP4 & MP3</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       background: linear-gradient(to right, #1e3c72, #2a5298);
@@ -65,7 +66,7 @@
         const mp4Url = data.find(v => v.type === 'nowatermark_hd')?.url || '#';
         const mp3Url = music_info?.url || '#';
 
-        const downloadFile = async (fileUrl, filename) => {
+        const downloadFile = async (fileUrl, filename, format) => {
           try {
             const response = await fetch(fileUrl);
             const blob = await response.blob();
@@ -78,17 +79,30 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
+
+            Swal.fire({
+              icon: 'success',
+              title: `${format} Downloaded!`,
+              text: 'Your download has started.',
+              showConfirmButton: false,
+              timer: 2000
+            });
+
           } catch (err) {
-            alert("Download failed. File may be blocked or CORS issue.");
+            Swal.fire({
+              icon: 'error',
+              title: 'Download Failed',
+              text: 'Could not download the file. Try again.',
+            });
           }
         };
 
         document.getElementById('mp4-hd').onclick = () => {
-          downloadFile(mp4Url, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`);
+          downloadFile(mp4Url, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp4`, 'MP4');
         };
 
         document.getElementById('mp3').onclick = () => {
-          downloadFile(mp3Url, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`);
+          downloadFile(mp3Url, `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3`, 'MP3');
         };
 
         resultDiv.classList.remove('hidden');
