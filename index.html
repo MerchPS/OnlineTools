@@ -23,29 +23,9 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(0, 0, 0, 0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      color: white;
-      font-size: 1.5rem;
-      font-weight: bold;
-      transition: opacity 0.5s;
-    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center p-4 text-white space-y-6">
-
-  <div id="loading-screen" class="loading-overlay">
-    TikTok Downloader Load System
-  </div>
 
   <div class="max-w-xl w-full glass p-6 fade-in">
     <h1 class="text-3xl font-bold mb-4 text-center">TikTok & YouTube Downloader</h1>
@@ -70,41 +50,36 @@
   </div>
 
   <script>
+    // SweetAlert2 Pop-up Changelog
     window.addEventListener('load', async () => {
       Swal.fire({
         title: '🆕 Update Changelog',
         html: `
-          <div class="text-left text-sm">
-            <ul class="mb-4 list-disc pl-5">
+          <div style="text-align: left; font-size: 14px; color: black;">
+            <ul style="margin-bottom: 10px; list-style: disc; padding-left: 20px;">
               <li>Added auto API status detection with emojis</li>
-              <li>Improved loading indicators when API is slow</li>
+              <li>Improved loading indicators</li>
               <li>Support TikTok MP3 and YouTube MP3/MP4</li>
-              <li>Cleaner interface with better error handling</li>
-              <li>Added elegant loading screen before UI appears</li>
-              <li>Auto-paste clipboard feature</li>
+              <li>Cleaner interface & error handling</li>
+              <li>Clipboard auto-paste feature</li>
             </ul>
-            <div class="border-t border-gray-400 pt-2 text-xs text-gray-200">
-              <strong>Status Info:</strong><br>
-              ✅ = API Normal<br>
-              ❌ = API Down<br>
-              ⏳ = Checking or Slow Response<br>
-              <br>
-              <em>Note: YouTube MP3 & MP4 API may be slow to respond or offline.</em>
-            </div>
+            <hr style="border: 1px solid #ccc; margin: 10px 0;">
+            <b>Status Info:</b><br>
+            ✅ = API Normal<br>
+            ❌ = API Down<br>
+            ⏳ = Checking or Slow Response<br><br>
+            <em style="color: gray;">Note: YouTube MP3 & MP4 API may be slow.</em>
           </div>
         `,
         showConfirmButton: false,
         showCloseButton: true,
-        backdrop: true,
+        background: "#ffffff",
         customClass: {
-          popup: 'bg-gray-200 text-black rounded-lg shadow-lg'
+          popup: 'rounded-lg shadow-lg'
         }
       });
 
-      setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
-      }, 2000);
-
+      // Auto paste from clipboard
       try {
         const text = await navigator.clipboard.readText();
         if (text.includes('tiktok.com') || text.includes('youtube.com')) {
@@ -113,39 +88,27 @@
       } catch (err) {
         console.warn('Clipboard access denied.');
       }
+
+      // Cek status API
+      checkApiStatus();
     });
 
     async function checkApiStatus() {
       const statusEl = document.getElementById('support-status');
       const emojis = { ok: '✅', fail: '❌', wait: '⏳' };
-      statusEl.innerHTML = `⏳ TikTok → MP3 | ⏳ YouTube → MP3 | ⏳ YouTube → MP4`;
+      statusEl.innerHTML = `${emojis.wait} TikTok → MP3 | ${emojis.wait} YouTube → MP3 | ${emojis.wait} YouTube → MP4`;
 
-      let tiktokEmoji = emojis.wait;
-      let ytmp3Emoji = emojis.wait;
-      let ytmp4Emoji = emojis.wait;
+      let [tiktok, ytMp3, ytMp4] = await Promise.all([
+        fetch('https://api.agatz.xyz/api/tiktok?url=https://www.tiktok.com/@scvideo/video/123')
+          .then(res => res.json().then(data => data.data ? emojis.ok : emojis.fail)).catch(() => emojis.fail),
+        fetch('https://api.agatz.xyz/api/ytmp3?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+          .then(res => res.json().then(data => data.status ? emojis.ok : emojis.fail)).catch(() => emojis.fail),
+        fetch('https://api.agatz.xyz/api/ytmp4?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+          .then(res => res.json().then(data => data.status ? emojis.ok : emojis.fail)).catch(() => emojis.fail)
+      ]);
 
-      try {
-        const res = await fetch('https://api.agatz.xyz/api/tiktok?url=https://www.tiktok.com/@scvideo/video/123');
-        const json = await res.json();
-        tiktokEmoji = json.data ? emojis.ok : emojis.fail;
-      } catch { tiktokEmoji = emojis.fail; }
-
-      try {
-        const res = await fetch('https://api.agatz.xyz/api/ytmp3?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-        const json = await res.json();
-        ytmp3Emoji = json.status === true ? emojis.ok : emojis.fail;
-      } catch { ytmp3Emoji = emojis.fail; }
-
-      try {
-        const res = await fetch('https://api.agatz.xyz/api/ytmp4?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-        const json = await res.json();
-        ytmp4Emoji = json.status === true ? emojis.ok : emojis.fail;
-      } catch { ytmp4Emoji = emojis.fail; }
-
-      statusEl.innerHTML = `${tiktokEmoji} TikTok → MP3 | ${ytmp3Emoji} YouTube → MP3 | ${ytmp4Emoji} YouTube → MP4`;
+      statusEl.innerHTML = `${tiktok} TikTok → MP3 | ${ytMp3} YouTube → MP3 | ${ytMp4} YouTube → MP4`;
     }
-
-    checkApiStatus();
 
     async function handleDownload() {
       const url = document.getElementById('url-input').value.trim();
@@ -171,10 +134,11 @@
           coverImg.src = res.data.cover;
           titleText.textContent = res.data.title;
 
-          const btn = document.createElement('button');
+          const btn = document.createElement('a');
           btn.textContent = 'Download MP3';
-          btn.className = 'bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded';
-          btn.onclick = () => downloadFile(res.data.music_info.url, 'tiktok_audio.mp3', 'mp3');
+          btn.className = 'bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-center';
+          btn.href = res.data.music_info.url;
+          btn.setAttribute('download', '');
           buttonsDiv.appendChild(btn);
 
         } else if (url.includes('youtube.com')) {
