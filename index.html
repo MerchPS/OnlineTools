@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TikTok & YouTube Downloader</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
-      transition: background 0.3s, color 0.3s;
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      min-height: 100vh;
     }
     .glass {
       background: rgba(255, 255, 255, 0.1);
@@ -16,35 +17,28 @@
       border-radius: 1rem;
     }
     .fade-in {
-      animation: fadeIn 1.2s ease-in-out;
+      animation: fadeIn 1.5s ease-in;
     }
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .dark-mode {
-      background: #0e1013;
-      color: white;
-    }
-    .light-mode {
-      background: #f3f4f6;
-      color: #1f2937;
-    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 light-mode" id="body">
-
-  <div class="absolute top-4 right-4">
-    <button id="toggle-mode" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700">🌗 Toggle Mode</button>
-  </div>
+<body class="flex flex-col items-center justify-center p-4 text-white space-y-6">
 
   <div class="max-w-xl w-full glass p-6 fade-in">
     <h1 class="text-3xl font-bold mb-4 text-center">TikTok & YouTube Downloader</h1>
 
-    <input id="url-input" type="text" placeholder="Paste TikTok or YouTube URL..." class="w-full p-3 rounded text-black mb-4" />
-    <button onclick="handleDownload()" class="bg-blue-600 hover:bg-blue-700 w-full p-3 rounded mb-6 text-white">Process</button>
+    <div class="text-center mb-4">
+      <h2 class="text-lg font-semibold">Supported Links:</h2>
+      <p id="support-status">⏳ Checking API status...</p>
+    </div>
 
-    <div id="loading" class="hidden text-center text-yellow-400 mb-4">Fetching media...</div>
+    <input id="url-input" type="text" placeholder="Paste TikTok or YouTube URL here..." class="w-full p-3 rounded text-black mb-4" />
+    <button onclick="handleDownload()" class="bg-blue-600 hover:bg-blue-700 w-full p-3 rounded mb-6">Process</button>
+
+    <div id="loading" class="hidden text-center text-yellow-300 mb-4">Fetching media... Please wait.</div>
 
     <div id="result" class="hidden">
       <img id="cover" class="rounded mb-4 w-full" />
@@ -52,44 +46,74 @@
       <div class="flex flex-col gap-4 mb-4" id="buttons"></div>
     </div>
 
-    <div id="error" class="text-red-400 hidden text-center">Failed to fetch media. Please check the URL.</div>
-
-    <div class="mt-8">
-      <h2 class="text-xl font-bold mb-2">📜 Download History</h2>
-      <ul id="history" class="text-sm list-disc pl-5"></ul>
-    </div>
+    <div id="error" class="text-red-400 hidden">Failed to fetch media. Please check the URL.</div>
   </div>
 
   <script>
-    // Show Changelog Popup
-    window.onload = () => {
+    // SweetAlert2 Pop-up Changelog
+    window.addEventListener('load', async () => {
       Swal.fire({
         title: '🆕 Update Changelog',
         html: `
-          <div style="text-align:left; font-size:14px">
-            <ul class="mb-2">
-              <li>🎵 TikTok auto download MP3 (no redirect)</li>
-              <li>🎬 YouTube MP3/MP4 supported with direct links</li>
-              <li>🌗 Dark/Light Mode Toggle</li>
-              <li>📜 Download History via localStorage</li>
-              <li>⚡ Improved performance & UI clean-up</li>
+          <div style="text-align: left; font-size: 14px; color: black;">
+            <ul style="margin-bottom: 10px; list-style: disc; padding-left: 20px;">
+              <li>Added auto API status detection with emojis</li>
+              <li>Improved loading indicators</li>
+              <li>Support TikTok MP3 and YouTube MP3/MP4</li>
+              <li>Cleaner interface & error handling</li>
+              <li>Clipboard auto-paste feature</li>
             </ul>
+            <hr style="border: 1px solid #ccc; margin: 10px 0;">
+            <b>Status Info:</b><br>
+            ✅ = API Normal<br>
+            ❌ = API Down<br>
+            ⏳ = Checking or Slow Response<br><br>
+            <em style="color: gray;">Note: YouTube MP3 & MP4 API may be slow.</em>
           </div>
         `,
-        showCloseButton: true,
         showConfirmButton: false,
-        customClass: { popup: 'bg-white text-black rounded-lg' }
+        showCloseButton: true,
+        background: "#ffffff",
+        customClass: {
+          popup: 'rounded-lg shadow-lg'
+        }
       });
 
-      loadHistory();
-    };
+      // Auto paste from clipboard
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text.includes('tiktok.com') || text.includes('youtube.com')) {
+          document.getElementById('url-input').value = text;
+        }
+      } catch (err) {
+        console.warn('Clipboard access denied.');
+      }
 
-    // Dark/Light Mode Toggle
-    const body = document.getElementById('body');
-    document.getElementById('toggle-mode').onclick = () => {
-      body.classList.toggle('dark-mode');
-      body.classList.toggle('light-mode');
-    };
+      // Cek status API
+      checkApiStatus();
+    });
+
+    async function checkApiStatus() {
+  const statusEl = document.getElementById('support-status');
+  const emojis = { ok: '✅', fail: '❌', wait: '⏳' };
+  statusEl.innerHTML = `${emojis.wait} TikTok → MP3 | ${emojis.wait} YouTube → MP3 | ${emojis.wait} YouTube → MP4`;
+
+  // Generate URL berbeda-beda biar gak kebaca aktif terus
+  const randomId = Math.floor(Math.random() * 1000000);
+  const tiktokURL = `https://www.tiktok.com/@scvideo/video/${randomId}`;
+  const youtubeURL = `https://www.youtube.com/watch?v=dQw4w9WgX${randomId.toString().slice(0, 2)}`; // bikin ID seolah beda
+
+  let [tiktok, ytMp3, ytMp4] = await Promise.all([
+    fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(tiktokURL)}`)
+      .then(res => res.json().then(data => data.data ? emojis.ok : emojis.fail)).catch(() => emojis.fail),
+    fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(youtubeURL)}`)
+      .then(res => res.json().then(data => data.status ? emojis.ok : emojis.fail)).catch(() => emojis.fail),
+    fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(youtubeURL)}`)
+      .then(res => res.json().then(data => data.status ? emojis.ok : emojis.fail)).catch(() => emojis.fail)
+  ]);
+
+  statusEl.innerHTML = `${tiktok} TikTok → MP3 | ${ytMp3} YouTube → MP3 | ${ytMp4} YouTube → MP4`;
+}
 
     async function handleDownload() {
       const url = document.getElementById('url-input').value.trim();
@@ -106,43 +130,33 @@
       buttonsDiv.innerHTML = '';
 
       try {
-        let response, res, title, thumbnail;
-
+        let response, res;
         if (url.includes('tiktok.com')) {
           response = await fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(url)}`);
           res = await response.json();
           if (!res.data || !res.data.music_info) throw new Error();
 
-          title = res.data.title;
-          thumbnail = res.data.cover;
+          coverImg.src = res.data.cover;
+          titleText.textContent = res.data.title;
 
-          coverImg.src = thumbnail;
-          titleText.textContent = title;
-
-          // Auto download without redirect
-          const blob = await fetch(res.data.music_info.url).then(res => res.blob());
-          const tempUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = tempUrl;
-          a.download = 'tiktok_audio.mp3';
-          a.click();
-
-          saveHistory(title, 'TikTok');
+          const btn = document.createElement('a');
+          btn.textContent = 'Download MP3';
+          btn.className = 'bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-center';
+          btn.href = res.data.music_info.url;
+          btn.setAttribute('download', '');
+          buttonsDiv.appendChild(btn);
 
         } else if (url.includes('youtube.com')) {
           response = await fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(url)}`);
           res = await response.json();
           if (!res.result || !res.result.title) throw new Error();
 
-          title = res.result.title;
-          thumbnail = res.result.thumbnail;
-
-          coverImg.src = thumbnail;
-          titleText.textContent = title;
+          coverImg.src = res.result.thumbnail;
+          titleText.textContent = res.result.title;
 
           const mp3Btn = document.createElement('a');
           mp3Btn.href = res.result.url;
-          mp3Btn.className = 'bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-center text-white';
+          mp3Btn.className = 'bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-center';
           mp3Btn.textContent = 'Download MP3';
           mp3Btn.setAttribute('download', '');
           buttonsDiv.appendChild(mp3Btn);
@@ -152,14 +166,12 @@
 
           const mp4Btn = document.createElement('a');
           mp4Btn.href = mp4Json.result.url;
-          mp4Btn.className = 'bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-center text-white';
+          mp4Btn.className = 'bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-center';
           mp4Btn.textContent = 'Download MP4';
           mp4Btn.setAttribute('download', '');
           buttonsDiv.appendChild(mp4Btn);
-
-          saveHistory(title, 'YouTube');
         } else {
-          throw new Error('Invalid URL');
+          throw new Error();
         }
 
         resultDiv.classList.remove('hidden');
@@ -169,26 +181,6 @@
       } finally {
         loading.classList.add('hidden');
       }
-    }
-
-    function saveHistory(title, source) {
-      const history = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
-      const newEntry = `${source}: ${title}`;
-      history.unshift(newEntry);
-      if (history.length > 10) history.pop();
-      localStorage.setItem('downloadHistory', JSON.stringify(history));
-      loadHistory();
-    }
-
-    function loadHistory() {
-      const list = document.getElementById('history');
-      const history = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
-      list.innerHTML = '';
-      history.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        list.appendChild(li);
-      });
     }
   </script>
 </body>
