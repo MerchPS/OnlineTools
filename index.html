@@ -3,48 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TikTok & YouTube Downloader</title>
+  <title>Social Media Downloader</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     :root {
-      --primary-dark: #1e3c72;
-      --secondary-dark: #2a5298;
-      --primary-light: #f8fafc;
-      --secondary-light: #e2e8f0;
+      --primary-dark: #1a1a1a;
+      --secondary-dark: #2d2d2d;
+      --primary-light: #f5f5f5;
+      --secondary-light: #e0e0e0;
     }
     
     body {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
       transition: all 0.3s ease;
     }
     
     .dark {
       background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
-      color: white;
+      color: #f5f5f5;
     }
     
     .light {
-      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-      color: #1e293b;
+      background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+      color: #333333;
     }
     
     .glass {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(40, 40, 40, 0.25);
       backdrop-filter: blur(12px);
       border-radius: 1rem;
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .glass-light {
       background: rgba(255, 255, 255, 0.8);
       backdrop-filter: blur(12px);
       border-radius: 1rem;
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     .fade-in {
@@ -57,23 +57,23 @@
     }
     
     .btn-primary {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      background: linear-gradient(135deg, #4b5563, #1f2937);
       transition: all 0.3s ease;
     }
     
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5);
+      box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.3);
     }
     
     .toggle-checkbox:checked {
       right: 0;
-      border-color: #3b82f6;
-      background-color: #3b82f6;
+      border-color: #4b5563;
+      background-color: #4b5563;
     }
     
     .toggle-checkbox:checked + .toggle-label {
-      background-color: #3b82f6;
+      background-color: #4b5563;
     }
     
     .status-indicator {
@@ -83,6 +83,7 @@
       padding: 0.25rem 0.5rem;
       border-radius: 9999px;
       font-size: 0.875rem;
+      font-weight: 500;
     }
     
     .status-ok {
@@ -112,18 +113,31 @@
     .download-btn {
       transition: all 0.3s ease;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      font-weight: 500;
     }
     
     .download-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
+    
+    .text-primary {
+      color: #f5f5f5;
+    }
+    
+    .text-secondary {
+      color: #d1d5db;
+    }
+    
+    .bg-spotify {
+      background: linear-gradient(135deg, #1DB954, #1ED760);
+    }
   </style>
 </head>
 <body class="dark flex flex-col items-center justify-center p-4 space-y-6">
   <div class="max-w-2xl w-full glass glass-light dark:glass p-8 fade-in">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TikTok & YouTube Downloader</h1>
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-300 to-gray-100 dark:from-gray-300 dark:to-gray-400 bg-clip-text text-transparent">Social Media Downloader</h1>
       
       <div class="flex items-center">
         <span class="mr-2 text-sm font-medium dark:text-gray-300 text-gray-600">Dark</span>
@@ -147,6 +161,9 @@
         <span class="status-indicator status-wait pulse" id="yt-mp4-status">
           <span id="yt-mp4-emoji">⏳</span> YouTube MP4
         </span>
+        <span class="status-indicator status-wait pulse" id="spotify-status">
+          <span id="spotify-emoji">⏳</span> Spotify MP3
+        </span>
       </div>
     </div>
 
@@ -154,12 +171,12 @@
       <input 
         id="url-input" 
         type="text" 
-        placeholder="Paste TikTok or YouTube URL here..." 
-        class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-gray-800 pr-12 transition-all duration-200"
+        placeholder="Paste TikTok, YouTube or Spotify URL here..." 
+        class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-gray-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-gray-800 pr-12 transition-all duration-200"
       />
       <button 
         onclick="handleDownload()" 
-        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-all duration-200"
+        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full transition-all duration-200"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
@@ -168,8 +185,8 @@
     </div>
 
     <div id="loading" class="hidden text-center mb-6">
-      <div class="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-        <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <div class="inline-flex items-center px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+        <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-gray-600 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -181,7 +198,10 @@
       <div class="relative group">
         <img id="cover" class="rounded-xl w-full h-64 object-cover mb-4 transition-all duration-300 group-hover:opacity-90" />
         <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-          <h2 id="title" class="text-white text-xl font-bold"></h2>
+          <div>
+            <h2 id="title" class="text-white text-xl font-bold"></h2>
+            <p id="artist" class="text-gray-200 text-sm"></p>
+          </div>
         </div>
       </div>
       
@@ -237,28 +257,28 @@
               <h3 class="font-bold text-lg mb-2">Latest Features</h3>
               <ul class="space-y-2">
                 <li class="flex items-start">
+                  <span class="mr-2">🎵</span>
+                  <span>Added Spotify MP3 download support</span>
+                </li>
+                <li class="flex items-start">
                   <span class="mr-2">🎨</span>
-                  <span>Dark & Light mode with automatic detection</span>
+                  <span>New gray/black gradient theme</span>
                 </li>
                 <li class="flex items-start">
                   <span class="mr-2">⚡</span>
-                  <span>Improved API status indicators with real-time checks</span>
+                  <span>Improved typography with Inter font</span>
                 </li>
                 <li class="flex items-start">
                   <span class="mr-2">🔗</span>
-                  <span>Smart URL detection and clipboard auto-paste</span>
-                </li>
-                <li class="flex items-start">
-                  <span class="mr-2">🎵</span>
-                  <span>Support for TikTok MP3 and YouTube MP3/MP4</span>
+                  <span>Better URL detection for all platforms</span>
                 </li>
               </ul>
             </div>
             <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              <h4 class="font-bold mb-1">API Status Guide</h4>
-              <div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span> Operational</div>
-              <div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full bg-red-500 mr-2"></span> Not Working</div>
-              <div class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-yellow-500 mr-2"></span> Checking/Slow</div>
+              <h4 class="font-bold mb-1">Supported Services</h4>
+              <div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span> TikTok MP3</div>
+              <div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span> YouTube MP3/MP4</div>
+              <div class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-green-500 mr-2"></span> Spotify MP3</div>
             </div>
           </div>
         `,
@@ -275,7 +295,7 @@
       // Auto paste from clipboard
       try {
         const text = await navigator.clipboard.readText();
-        if (text.includes('tiktok.com') || text.includes('youtube.com') || text.includes('youtu.be')) {
+        if (text.includes('tiktok.com') || text.includes('youtube.com') || text.includes('youtu.be') || text.includes('spotify.com')) {
           document.getElementById('url-input').value = text;
           // Show a subtle notification
           const toast = Swal.mixin({
@@ -305,12 +325,14 @@
       const randomId = Math.floor(Math.random() * 1000000);
       const tiktokURL = `https://www.tiktok.com/@scvideo/video/${randomId}`;
       const youtubeURL = `https://www.youtube.com/watch?v=dQw4w9WgX${randomId.toString().slice(0, 2)}`;
+      const spotifyURL = `https://open.spotify.com/track/${randomId.toString().slice(0, 22)}`;
       
       try {
-        const [tiktokRes, ytMp3Res, ytMp4Res] = await Promise.allSettled([
+        const [tiktokRes, ytMp3Res, ytMp4Res, spotifyRes] = await Promise.allSettled([
           fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(tiktokURL)}`),
           fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(youtubeURL)}`),
-          fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(youtubeURL)}`)
+          fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(youtubeURL)}`),
+          fetch(`https://api.agatz.xyz/api/spotifydl?url=${encodeURIComponent(spotifyURL)}`)
         ]);
         
         // Update TikTok status
@@ -335,6 +357,14 @@
           'yt-mp4-emoji',
           ytMp4Res.status === 'fulfilled' && ytMp4Res.value.ok,
           'YouTube MP4'
+        );
+        
+        // Update Spotify status
+        updateStatus(
+          'spotify-status', 
+          'spotify-emoji',
+          spotifyRes.status === 'fulfilled' && spotifyRes.value.ok,
+          'Spotify MP3'
         );
         
       } catch (error) {
@@ -365,6 +395,7 @@
       const errorDiv = document.getElementById('error');
       const coverImg = document.getElementById('cover');
       const titleText = document.getElementById('title');
+      const artistText = document.getElementById('artist');
       const buttonsDiv = document.getElementById('buttons');
       const loading = document.getElementById('loading');
 
@@ -374,8 +405,8 @@
         return;
       }
       
-      if (!url.includes('tiktok.com') && !url.includes('youtube.com') && !url.includes('youtu.be')) {
-        showError('Please enter a valid TikTok or YouTube URL');
+      if (!url.includes('tiktok.com') && !url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('spotify.com')) {
+        showError('Please enter a valid TikTok, YouTube or Spotify URL');
         return;
       }
 
@@ -401,6 +432,7 @@
           coverImg.src = res.data.cover;
           coverImg.alt = res.data.title;
           titleText.textContent = res.data.title || 'TikTok Audio';
+          artistText.textContent = '';
 
           // Create download button for TikTok (will force download)
           createTikTokDownloadButton(
@@ -423,13 +455,14 @@
           coverImg.src = res.result.thumbnail || 'https://i.ytimg.com/vi/default.jpg';
           coverImg.alt = res.result.title;
           titleText.textContent = res.result.title;
+          artistText.textContent = '';
 
           // Create MP3 download button (will redirect)
           createYouTubeDownloadButton(
             buttonsDiv,
             'Download MP3',
             res.result.url,
-            'bg-gradient-to-r from-green-500 to-emerald-500',
+            'bg-gradient-to-r from-red-500 to-red-600',
             'music'
           );
 
@@ -450,6 +483,31 @@
           } catch (e) {
             console.error('Failed to get MP4 version:', e);
           }
+        } else if (url.includes('spotify.com')) {
+          // Spotify processing
+          response = await fetch(`https://api.agatz.xyz/api/spotifydl?url=${encodeURIComponent(url)}`);
+          res = await response.json();
+          
+          if (!res.data) {
+            throw new Error('Invalid Spotify response');
+          }
+
+          // Parse the nested JSON data
+          const spotifyData = JSON.parse(res.data);
+          
+          // Update UI with Spotify data
+          coverImg.src = spotifyData.gambar_kecil[0].url || 'https://i.scdn.co/image/ab67616d0000b2732a038d3bf875d23e4aeaa84e';
+          coverImg.alt = spotifyData.judul;
+          titleText.textContent = spotifyData.judul || 'Spotify Track';
+          artistText.textContent = spotifyData.nama_channel || 'Unknown Artist';
+
+          // Create Spotify download button (will redirect to audio URL)
+          createSpotifyDownloadButton(
+            buttonsDiv,
+            'Download MP3',
+            spotifyData.url_audio_v1,
+            spotifyData.judul || 'spotify_track'
+          );
         }
 
         // Show result
@@ -553,6 +611,25 @@
       
       btn.appendChild(icon);
       btn.appendChild(btnText);
+      container.appendChild(btn);
+    }
+    
+    // Function to create Spotify download button (redirects to audio URL)
+    function createSpotifyDownloadButton(container, text, url, filename) {
+      const btn = document.createElement('a');
+      btn.className = `download-btn bg-spotify text-white p-3 rounded-lg flex items-center justify-center space-x-2 font-medium`;
+      btn.href = url;
+      btn.target = '_blank';
+      btn.rel = 'noopener noreferrer';
+      btn.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mp3` || 'spotify_track.mp3';
+      
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+        </svg>
+        <span>${text}</span>
+      `;
+      
       container.appendChild(btn);
     }
     
