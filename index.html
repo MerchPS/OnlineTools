@@ -268,7 +268,7 @@
           class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-gray-800 pr-12 transition-all duration-200"
         />
         <button 
-          onclick="sendMessage()" 
+          id="send-button"
           class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full transition-all duration-200"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -309,7 +309,7 @@
           class="w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-gray-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-gray-800 pr-12 transition-all duration-200"
         />
         <button 
-          onclick="handleDownload()" 
+          id="download-button"
           class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full transition-all duration-200"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -359,36 +359,50 @@
   </div>
 
   <script>
-    // Theme toggle functionality
+    // DOM Elements
     const toggle = document.getElementById('toggle');
     const body = document.body;
-    
-    // Check for saved theme preference or use preferred color scheme
-    if (localStorage.getItem('theme') === 'light' || 
-        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-      body.classList.remove('dark');
-      body.classList.add('light');
-      toggle.checked = true;
-    }
-    
-    toggle.addEventListener('change', function() {
-      if (this.checked) {
-        body.classList.remove('dark');
-        body.classList.add('light');
-        localStorage.setItem('theme', 'light');
-      } else {
-        body.classList.remove('light');
-        body.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      }
-    });
-
-    // Mode switching functionality
     const aiModeBtn = document.getElementById('ai-mode');
     const downloaderModeBtn = document.getElementById('downloader-mode');
     const aiChatSection = document.getElementById('ai-chat-section');
     const downloaderSection = document.getElementById('downloader-section');
+    const chatHistory = document.getElementById('chat-history');
+    const aiInput = document.getElementById('ai-input');
+    const sendButton = document.getElementById('send-button');
+    const urlInput = document.getElementById('url-input');
+    const downloadButton = document.getElementById('download-button');
+    const resultDiv = document.getElementById('result');
+    const errorDiv = document.getElementById('error');
+    const coverImg = document.getElementById('cover');
+    const titleText = document.getElementById('title');
+    const artistText = document.getElementById('artist');
+    const durationText = document.getElementById('duration');
+    const buttonsDiv = document.getElementById('buttons');
+    const loading = document.getElementById('loading');
 
+    // Theme toggle functionality
+    if (localStorage.getItem('theme') === 'light' || 
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      body.classList.remove('dark');
+      body.classList.add('light');
+      if (toggle) toggle.checked = true;
+    }
+    
+    if (toggle) {
+      toggle.addEventListener('change', function() {
+        if (this.checked) {
+          body.classList.remove('dark');
+          body.classList.add('light');
+          localStorage.setItem('theme', 'light');
+        } else {
+          body.classList.remove('light');
+          body.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+        }
+      });
+    }
+
+    // Mode switching functionality
     aiModeBtn.addEventListener('click', () => {
       aiModeBtn.classList.add('active-mode');
       downloaderModeBtn.classList.remove('active-mode');
@@ -413,10 +427,6 @@
     }
 
     // Chat functionality
-    const chatHistory = document.getElementById('chat-history');
-    const aiInput = document.getElementById('ai-input');
-
-    // Load chat history from localStorage
     function loadChatHistory() {
       const history = JSON.parse(localStorage.getItem('faridAI_chatHistory')) || [];
       chatHistory.innerHTML = '';
@@ -426,7 +436,6 @@
       });
     }
 
-    // Add message to chat
     function addMessageToChat(role, content) {
       const messageDiv = document.createElement('div');
       messageDiv.className = role === 'assistant' ? 'ai-message p-3 rounded-lg' : 'user-message p-3 rounded-lg';
@@ -442,19 +451,15 @@
       
       messageDiv.appendChild(messageContent);
       chatHistory.appendChild(messageDiv);
-      
-      // Scroll to bottom
       chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
-    // Save message to history
     function saveMessage(role, content) {
       const history = JSON.parse(localStorage.getItem('faridAI_chatHistory')) || [];
       history.push({ role, content });
       localStorage.setItem('faridAI_chatHistory', JSON.stringify(history));
     }
 
-    // Show typing indicator
     function showTypingIndicator() {
       const typingDiv = document.createElement('div');
       typingDiv.className = 'ai-message p-3 rounded-lg';
@@ -476,7 +481,6 @@
       chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
-    // Hide typing indicator
     function hideTypingIndicator() {
       const typingDiv = document.getElementById('typing-indicator');
       if (typingDiv) {
@@ -484,33 +488,22 @@
       }
     }
 
-    // Send message to AI
     async function sendMessage() {
       const message = aiInput.value.trim();
       if (!message) return;
 
-      // Add user message to chat
       addMessageToChat('user', message);
       saveMessage('user', message);
-      
-      // Clear input
       aiInput.value = '';
-      
-      // Show typing indicator
       showTypingIndicator();
       
       try {
-        // Call API
         const response = await fetch(`https://api.agatz.xyz/api/gptlogic?logic=Generate%20humanized%20chatgpt%20text%20in%20Indonesian,%20you%20are%20an%20AI%20assistant%20named%20Farid&p=${encodeURIComponent(message)}`);
         const data = await response.text();
         
-        // Remove typing indicator
         hideTypingIndicator();
-        
-        // Add AI response to chat
         addMessageToChat('assistant', data);
         saveMessage('assistant', data);
-        
       } catch (error) {
         console.error('Error calling AI API:', error);
         hideTypingIndicator();
@@ -519,21 +512,18 @@
       }
     }
 
-    // Handle Enter key press
+    // Event listeners for chat
+    sendButton.addEventListener('click', sendMessage);
     aiInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         sendMessage();
       }
     });
 
-    // Load chat history when page loads
-    loadChatHistory();
-
     // Downloader functionality
     async function checkApiStatus() {
       const emojis = { ok: '✅', fail: '❌', wait: '⏳' };
       
-      // Generate different URLs to avoid caching
       const randomId = Math.floor(Math.random() * 1000000);
       const tiktokURL = `https://www.tiktok.com/@scvideo/video/${randomId}`;
       const youtubeURL = `https://www.youtube.com/watch?v=dQw4w9WgX${randomId.toString().slice(0, 2)}`;
@@ -549,46 +539,11 @@
           fetch(`https://api.agatz.xyz/api/soundclouddl?url=${encodeURIComponent(soundcloudURL)}`)
         ]);
         
-        // Update TikTok status
-        updateStatus(
-          'tiktok-status', 
-          'tiktok-emoji',
-          tiktokRes.status === 'fulfilled' && tiktokRes.value.ok,
-          'TikTok MP3'
-        );
-        
-        // Update YouTube MP3 status
-        updateStatus(
-          'yt-mp3-status', 
-          'yt-mp3-emoji',
-          ytMp3Res.status === 'fulfilled' && ytMp3Res.value.ok,
-          'YouTube MP3'
-        );
-        
-        // Update YouTube MP4 status
-        updateStatus(
-          'yt-mp4-status', 
-          'yt-mp4-emoji',
-          ytMp4Res.status === 'fulfilled' && ytMp4Res.value.ok,
-          'YouTube MP4'
-        );
-        
-        // Update Spotify status
-        updateStatus(
-          'spotify-status', 
-          'spotify-emoji',
-          spotifyRes.status === 'fulfilled' && spotifyRes.value.ok,
-          'Spotify MP3'
-        );
-        
-        // Update SoundCloud status
-        updateStatus(
-          'soundcloud-status', 
-          'soundcloud-emoji',
-          soundcloudRes.status === 'fulfilled' && soundcloudRes.value.ok,
-          'SoundCloud MP3'
-        );
-        
+        updateStatus('tiktok-status', 'tiktok-emoji', tiktokRes.status === 'fulfilled' && tiktokRes.value.ok, 'TikTok MP3');
+        updateStatus('yt-mp3-status', 'yt-mp3-emoji', ytMp3Res.status === 'fulfilled' && ytMp3Res.value.ok, 'YouTube MP3');
+        updateStatus('yt-mp4-status', 'yt-mp4-emoji', ytMp4Res.status === 'fulfilled' && ytMp4Res.value.ok, 'YouTube MP4');
+        updateStatus('spotify-status', 'spotify-emoji', spotifyRes.status === 'fulfilled' && spotifyRes.value.ok, 'Spotify MP3');
+        updateStatus('soundcloud-status', 'soundcloud-emoji', soundcloudRes.status === 'fulfilled' && soundcloudRes.value.ok, 'SoundCloud MP3');
       } catch (error) {
         console.error('Error checking API status:', error);
       }
@@ -612,17 +567,8 @@
     }
 
     async function handleDownload() {
-      const url = document.getElementById('url-input').value.trim();
-      const resultDiv = document.getElementById('result');
-      const errorDiv = document.getElementById('error');
-      const coverImg = document.getElementById('cover');
-      const titleText = document.getElementById('title');
-      const artistText = document.getElementById('artist');
-      const durationText = document.getElementById('duration');
-      const buttonsDiv = document.getElementById('buttons');
-      const loading = document.getElementById('loading');
-
-      // Validate URL
+      const url = urlInput.value.trim();
+      
       if (!url) {
         showError('Please enter a URL');
         return;
@@ -633,7 +579,6 @@
         return;
       }
 
-      // Reset UI
       resultDiv.classList.add('hidden');
       errorDiv.classList.add('hidden');
       loading.classList.remove('hidden');
@@ -643,127 +588,76 @@
         let response, res;
         
         if (url.includes('tiktok.com')) {
-          // TikTok processing
           response = await fetch(`https://api.agatz.xyz/api/tiktok?url=${encodeURIComponent(url)}`);
           res = await response.json();
           
-          if (!res.data || !res.data.music_info) {
-            throw new Error('Invalid TikTok response');
-          }
+          if (!res.data || !res.data.music_info) throw new Error('Invalid TikTok response');
 
-          // Update UI with TikTok data
           coverImg.src = res.data.cover;
           coverImg.alt = res.data.title;
           titleText.textContent = res.data.title || 'TikTok Audio';
           artistText.textContent = '';
           durationText.textContent = '';
 
-          // Create download button for TikTok (will force download)
-          createTikTokDownloadButton(
-            buttonsDiv,
-            'Download MP3',
-            res.data.music_info.url,
-            res.data.title || 'tiktok_audio'
-          );
+          createTikTokDownloadButton(buttonsDiv, 'Download MP3', res.data.music_info.url, res.data.title || 'tiktok_audio');
 
         } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-          // YouTube processing
           response = await fetch(`https://api.agatz.xyz/api/ytmp3?url=${encodeURIComponent(url)}`);
           res = await response.json();
           
-          if (!res.result || !res.result.title) {
-            throw new Error('Invalid YouTube response');
-          }
+          if (!res.result || !res.result.title) throw new Error('Invalid YouTube response');
 
-          // Update UI with YouTube data
           coverImg.src = res.result.thumbnail || 'https://i.ytimg.com/vi/default.jpg';
           coverImg.alt = res.result.title;
           titleText.textContent = res.result.title;
           artistText.textContent = '';
           durationText.textContent = '';
 
-          // Create MP3 download button (will redirect)
-          createYouTubeDownloadButton(
-            buttonsDiv,
-            'Download MP3',
-            res.result.url,
-            'bg-gradient-to-r from-red-500 to-red-600',
-            'music'
-          );
+          createYouTubeDownloadButton(buttonsDiv, 'Download MP3', res.result.url, 'bg-gradient-to-r from-red-500 to-red-600', 'music');
 
-          // Get MP4 version
           try {
             const mp4Res = await fetch(`https://api.agatz.xyz/api/ytmp4?url=${encodeURIComponent(url)}`);
             const mp4Json = await mp4Res.json();
             
             if (mp4Json.result?.url) {
-              createYouTubeDownloadButton(
-                buttonsDiv,
-                'Download MP4',
-                mp4Json.result.url,
-                'bg-gradient-to-r from-blue-500 to-indigo-500',
-                'video'
-              );
+              createYouTubeDownloadButton(buttonsDiv, 'Download MP4', mp4Json.result.url, 'bg-gradient-to-r from-blue-500 to-indigo-500', 'video');
             }
           } catch (e) {
             console.error('Failed to get MP4 version:', e);
           }
         } else if (url.includes('spotify.com')) {
-          // Spotify processing
           response = await fetch(`https://api.agatz.xyz/api/spotifydl?url=${encodeURIComponent(url)}`);
           res = await response.json();
           
-          if (!res.data) {
-            throw new Error('Invalid Spotify response');
-          }
+          if (!res.data) throw new Error('Invalid Spotify response');
 
-          // Parse the nested JSON data
           const spotifyData = JSON.parse(res.data);
           
-          // Update UI with Spotify data
           coverImg.src = spotifyData.gambar_kecil[0].url || 'https://i.scdn.co/image/ab67616d0000b2732a038d3bf875d23e4aeaa84e';
           coverImg.alt = spotifyData.judul;
           titleText.textContent = spotifyData.judul || 'Spotify Track';
           artistText.textContent = spotifyData.nama_channel || 'Unknown Artist';
           durationText.textContent = '';
 
-          // Create Spotify download button (will redirect to audio URL)
-          createSpotifyDownloadButton(
-            buttonsDiv,
-            'Download MP3',
-            spotifyData.url_audio_v1,
-            spotifyData.judul || 'spotify_track'
-          );
+          createSpotifyDownloadButton(buttonsDiv, 'Download MP3', spotifyData.url_audio_v1, spotifyData.judul || 'spotify_track');
         } else if (url.includes('soundcloud.com')) {
-          // SoundCloud processing
           response = await fetch(`https://api.agatz.xyz/api/soundclouddl?url=${encodeURIComponent(url)}`);
           res = await response.json();
           
-          if (!res.data || !res.data.download) {
-            throw new Error('Invalid SoundCloud response');
-          }
+          if (!res.data || !res.data.download) throw new Error('Invalid SoundCloud response');
 
           const soundcloudData = res.data;
           
-          // Update UI with SoundCloud data
           coverImg.src = soundcloudData.thumbnail || 'https://i1.sndcdn.com/avatars-000615221558-5e3k0y-t500x500.jpg';
           coverImg.alt = soundcloudData.title;
           titleText.textContent = soundcloudData.title || 'SoundCloud Track';
           artistText.textContent = '';
           durationText.textContent = soundcloudData.duration || '';
 
-          // Create SoundCloud download button (will redirect to audio URL)
-          createSoundCloudDownloadButton(
-            buttonsDiv,
-            'Download MP3',
-            soundcloudData.download,
-            soundcloudData.title || 'soundcloud_track'
-          );
+          createSoundCloudDownloadButton(buttonsDiv, 'Download MP3', soundcloudData.download, soundcloudData.title || 'soundcloud_track');
         }
 
-        // Show result
         resultDiv.classList.remove('hidden');
-        
       } catch (e) {
         console.error('Error processing URL:', e);
         showError('Failed to process the URL. Please try again later.');
@@ -772,7 +666,6 @@
       }
     }
     
-    // Function to create TikTok download button that forces download
     function createTikTokDownloadButton(container, text, url, filename) {
       const btn = document.createElement('button');
       btn.className = `download-btn bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 rounded-lg flex items-center justify-center space-x-2 font-medium`;
@@ -785,7 +678,6 @@
       
       btn.onclick = async function() {
         try {
-          // Show loading indicator on button
           const originalHTML = btn.innerHTML;
           btn.innerHTML = `
             <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -796,11 +688,9 @@
           `;
           btn.disabled = true;
           
-          // Fetch the audio file as blob
           const audioRes = await fetch(url);
           const audioBlob = await audioRes.blob();
           
-          // Create download link
           const blobUrl = window.URL.createObjectURL(audioBlob);
           const a = document.createElement('a');
           a.href = blobUrl;
@@ -808,11 +698,9 @@
           document.body.appendChild(a);
           a.click();
           
-          // Clean up
           window.URL.revokeObjectURL(blobUrl);
           document.body.removeChild(a);
           
-          // Show success notification
           Swal.fire({
             icon: 'success',
             title: 'Download Started',
@@ -825,7 +713,6 @@
           console.error('Download failed:', error);
           showError('Failed to download audio. Please try again.');
         } finally {
-          // Restore original button state
           btn.innerHTML = originalHTML;
           btn.disabled = false;
         }
@@ -834,7 +721,6 @@
       container.appendChild(btn);
     }
     
-    // Function to create YouTube download button (redirects to URL)
     function createYouTubeDownloadButton(container, text, url, colorClasses, iconType) {
       const btn = document.createElement('a');
       btn.className = `download-btn ${colorClasses} text-white p-3 rounded-lg flex items-center justify-center space-x-2 font-medium`;
@@ -865,7 +751,6 @@
       container.appendChild(btn);
     }
     
-    // Function to create Spotify download button (redirects to audio URL)
     function createSpotifyDownloadButton(container, text, url, filename) {
       const btn = document.createElement('a');
       btn.className = `download-btn bg-spotify text-white p-3 rounded-lg flex items-center justify-center space-x-2 font-medium`;
@@ -884,7 +769,6 @@
       container.appendChild(btn);
     }
     
-    // Function to create SoundCloud download button (redirects to audio URL)
     function createSoundCloudDownloadButton(container, text, url, filename) {
       const btn = document.createElement('a');
       btn.className = `download-btn bg-soundcloud text-white p-3 rounded-lg flex items-center justify-center space-x-2 font-medium`;
@@ -904,24 +788,27 @@
     }
     
     function showError(message) {
-      const errorDiv = document.getElementById('error');
       errorDiv.querySelector('span').textContent = message;
       errorDiv.classList.remove('hidden');
       
-      // Hide after 5 seconds
       setTimeout(() => {
         errorDiv.classList.add('hidden');
       }, 5000);
     }
 
+    // Event listeners
+    downloadButton.addEventListener('click', handleDownload);
+
     // Initialize the app
     window.addEventListener('load', async () => {
+      // Load chat history
+      loadChatHistory();
+      
       // Auto paste from clipboard
       try {
         const text = await navigator.clipboard.readText();
         if (text.includes('tiktok.com') || text.includes('youtube.com') || text.includes('youtu.be') || text.includes('spotify.com') || text.includes('soundcloud.com')) {
-          document.getElementById('url-input').value = text;
-          // Show a subtle notification
+          urlInput.value = text;
           const toast = Swal.mixin({
             toast: true,
             position: 'top-end',
