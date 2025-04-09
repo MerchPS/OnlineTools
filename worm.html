@@ -1,156 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Worm Game</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center; }
-    canvas { background: #1e293b; border: 5px solid #334155; display: block; margin: 20px auto; }
-    #score { font-size: 1.5rem; margin: 10px 0; }
-    #resetBtn {
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+    }
+    canvas {
+      background: #222;
+      margin-top: 20px;
+      border: 5px solid #555;
+    }
+    #start-screen, #controls, #reset-btn {
+      margin-top: 20px;
+    }
+    #controls {
+      display: none;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .arrow-btn {
+      background: #333;
+      color: #fff;
+      border: 2px solid #555;
       padding: 10px 20px;
-      font-size: 1rem;
-      background: #3b82f6;
-      border: none;
-      color: white;
+      font-size: 18px;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
     }
-    #resetBtn:hover { background: #2563eb; }
+    #reset-btn {
+      display: none;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: crimson;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>🐍 Worm Game</h1>
-  <div id="score">Score: 0</div>
-  <canvas id="gameCanvas" width="600" height="600"></canvas>
-  <button id="resetBtn">🔁 Reset Game</button>
+  <div id="start-screen">
+    <p>Select Device:</p>
+    <button onclick="startGame('desktop')">Desktop</button>
+    <button onclick="startGame('phone')">Phone</button>
+  </div>
+
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <div id="controls">
+    <div>
+      <button class="arrow-btn" onclick="turn('up')">⬆️</button>
+    </div>
+    <div>
+      <button class="arrow-btn" onclick="turn('left')">⬅️</button>
+      <button class="arrow-btn" onclick="turn('down')">⬇️</button>
+      <button class="arrow-btn" onclick="turn('right')">➡️</button>
+    </div>
+  </div>
+  <h2 id="score">Score: 0</h2>
+  <button id="reset-btn" onclick="resetGame()">Reset</button>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const tileSize = 20;
-    const rows = canvas.height / tileSize;
-    const cols = canvas.width / tileSize;
+    const gridSize = 20;
+    const tileCount = canvas.width / gridSize;
 
-    let worm = [ { x: 5, y: 5 } ];
-    let direction = 'RIGHT';
-    let food = generateFood();
-    let barriers = generateBarriers();
+    let snake = [{x: 10, y: 10}];
+    let velocity = {x: 0, y: 0};
+    let food = {};
+    let barriers = [];
     let score = 0;
-    let gameInterval;
     let gameOver = false;
+    let device = '';
+    let interval;
 
-    function generateFood() {
-      let pos;
-      do {
-        pos = {
-          x: Math.floor(Math.random() * cols),
-          y: Math.floor(Math.random() * rows)
-        };
-      } while (worm.some(part => part.x === pos.x && part.y === pos.y) ||
-               barriers.some(b => b.x === pos.x && b.y === pos.y));
-      return pos;
+    function startGame(selectedDevice) {
+      device = selectedDevice;
+      document.getElementById('start-screen').style.display = 'none';
+      if (device === 'phone') document.getElementById('controls').style.display = 'flex';
+      placeFood();
+      generateBarriers();
+      interval = setInterval(gameLoop, 100);
     }
 
-    function generateBarriers() {
-      const barriers = [];
-      for (let i = 0; i < 30; i++) {
-        let pos;
-        do {
-          pos = {
-            x: Math.floor(Math.random() * cols),
-            y: Math.floor(Math.random() * rows)
-          };
-        } while (worm.some(part => part.x === pos.x && part.y === pos.y));
-        barriers.push(pos);
-      }
-      return barriers;
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw worm
-      ctx.fillStyle = '#10b981';
-      worm.forEach((segment, index) => {
-        ctx.fillRect(segment.x * tileSize, segment.y * tileSize, tileSize, tileSize);
-      });
-
-      // Draw food
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
-
-      // Draw barriers
-      ctx.fillStyle = '#ef4444';
-      barriers.forEach(b => {
-        ctx.fillRect(b.x * tileSize, b.y * tileSize, tileSize, tileSize);
-      });
-    }
-
-    function update() {
+    function gameLoop() {
       if (gameOver) return;
+      const head = {...snake[0]};
+      head.x += velocity.x;
+      head.y += velocity.y;
 
-      const head = { ...worm[0] };
-      if (direction === 'UP') head.y -= 1;
-      if (direction === 'DOWN') head.y += 1;
-      if (direction === 'LEFT') head.x -= 1;
-      if (direction === 'RIGHT') head.x += 1;
+      if (
+        head.x < 0 || head.x >= tileCount ||
+        head.y < 0 || head.y >= tileCount ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y) ||
+        barriers.some(b => b.x === head.x && b.y === head.y)
+      ) {
+        gameOver = true;
+        document.getElementById('reset-btn').style.display = 'inline-block';
+        return;
+      }
 
-      // Collision with wall
-      if (head.x < 0 || head.y < 0 || head.x >= cols || head.y >= rows) return endGame();
+      snake.unshift(head);
 
-      // Collision with self
-      if (worm.some(segment => segment.x === head.x && segment.y === head.y)) return endGame();
-
-      // Collision with barrier
-      if (barriers.some(b => b.x === head.x && b.y === head.y)) return endGame();
-
-      worm.unshift(head);
-
-      // Eat food
       if (head.x === food.x && head.y === food.y) {
-        score++;
-        food = generateFood();
-        document.getElementById('score').textContent = 'Score: ' + score;
+        score += 1;
+        document.getElementById('score').innerText = 'Score: ' + score;
+        placeFood();
       } else {
-        worm.pop();
+        snake.pop();
       }
 
       draw();
     }
 
-    function endGame() {
-      gameOver = true;
-      clearInterval(gameInterval);
-      alert('💀 Game Over! Your score: ' + score);
+    function draw() {
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw snake
+      ctx.fillStyle = '#0f0';
+      snake.forEach(seg => ctx.fillRect(seg.x * gridSize, seg.y * gridSize, gridSize, gridSize));
+
+      // Draw food
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+
+      // Draw barriers
+      ctx.fillStyle = '#555';
+      barriers.forEach(b => ctx.fillRect(b.x * gridSize, b.y * gridSize, gridSize, gridSize));
+    }
+
+    function placeFood() {
+      food = {
+        x: Math.floor(Math.random() * tileCount),
+        y: Math.floor(Math.random() * tileCount)
+      };
+    }
+
+    function generateBarriers() {
+      barriers = [];
+      for (let i = 0; i < 10; i++) {
+        barriers.push({
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount)
+        });
+      }
     }
 
     function resetGame() {
-      worm = [ { x: 5, y: 5 } ];
-      direction = 'RIGHT';
-      food = generateFood();
-      barriers = generateBarriers();
+      snake = [{x: 10, y: 10}];
+      velocity = {x: 0, y: 0};
       score = 0;
       gameOver = false;
-      document.getElementById('score').textContent = 'Score: 0';
-      clearInterval(gameInterval);
-      gameInterval = setInterval(update, 100);
+      document.getElementById('score').innerText = 'Score: 0';
+      document.getElementById('reset-btn').style.display = 'none';
+      placeFood();
+      generateBarriers();
     }
 
-    window.addEventListener('keydown', e => {
-      if (e.key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
-      if (e.key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
-      if (e.key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
-      if (e.key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+    function turn(dir) {
+      if (dir === 'up' && velocity.y === 0) velocity = {x: 0, y: -1};
+      if (dir === 'down' && velocity.y === 0) velocity = {x: 0, y: 1};
+      if (dir === 'left' && velocity.x === 0) velocity = {x: -1, y: 0};
+      if (dir === 'right' && velocity.x === 0) velocity = {x: 1, y: 0};
+    }
+
+    document.addEventListener('keydown', e => {
+      if (device !== 'desktop') return;
+      if ((e.key === 'ArrowUp' || e.key === 'w') && velocity.y === 0) velocity = {x: 0, y: -1};
+      if ((e.key === 'ArrowDown' || e.key === 's') && velocity.y === 0) velocity = {x: 0, y: 1};
+      if ((e.key === 'ArrowLeft' || e.key === 'a') && velocity.x === 0) velocity = {x: -1, y: 0};
+      if ((e.key === 'ArrowRight' || e.key === 'd') && velocity.x === 0) velocity = {x: 1, y: 0};
     });
-
-    document.getElementById('resetBtn').addEventListener('click', resetGame);
-
-    resetGame();
   </script>
 </body>
 </html>
-
