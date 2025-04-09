@@ -237,8 +237,6 @@
     let gameSpeed = 100;
     let gameInterval;
     let nextDirection = null;
-    let aiSnakes = [];
-    let aiRespawnTimers = {};
     
     // Initialize game
     function init() {
@@ -256,11 +254,13 @@
       canvas.style.height = `${maxWidth}px`;
     }
     
-    // Start game
+    // Start game function
     function startGame(selectedDevice) {
       device = selectedDevice;
       startScreen.style.display = 'none';
-      if (device === 'phone') mobileControls.style.display = 'grid';
+      if (device === 'phone') {
+        mobileControls.style.display = 'grid';
+      }
       
       // Initialize game state
       snake = [{ x: 10, y: 10 }];
@@ -269,39 +269,15 @@
       gameOver = false;
       gameSpeed = 150;
       nextDirection = null;
-      aiSnakes = [];
-      aiRespawnTimers = {};
       
       scoreDisplay.textContent = `Score: ${score}`;
       
       placeFood();
       generateBarriers();
-      spawnAI(2);
       
       // Start game loop
       if (gameInterval) clearInterval(gameInterval);
       gameInterval = setInterval(gameLoop, gameSpeed);
-    }
-    
-    // Spawn AI snakes
-    function spawnAI(count) {
-      for (let i = 0; i < count; i++) {
-        addAI();
-      }
-    }
-    
-    // Add a new AI snake
-    function addAI() {
-      const colors = ['#ff00ff', '#00ffff', '#ffff00', '#ff9900'];
-      const x = Math.floor(Math.random() * (tileCount - 10)) + 5;
-      const y = Math.floor(Math.random() * (tileCount - 10)) + 5;
-      
-      aiSnakes.push({
-        body: [{ x, y }],
-        dir: { x: 0, y: 0 },
-        color: colors[aiSnakes.length % colors.length],
-        id: Date.now() + Math.random()
-      });
     }
     
     // Game loop
@@ -314,285 +290,100 @@
         nextDirection = null;
       }
       
-      // Move player snake
-      moveSnake(snake, velocity, true);
-      
-      // Move AI snakes
-      aiSnakes.forEach((ai, index) => {
-        updateAI(ai);
-        moveSnake(ai.body, ai.dir, false, ai.id);
-      });
-      
-      draw();
-    }
-    
-    // Move a snake
-    function moveSnake(body, dir, isPlayer, aiId) {
-      const head = { ...body[0] };
-      head.x += dir.x;
-      head.y += dir.y;
-      
-      // Check collisions
-      const collision = checkCollision(head, body, isPlayer);
-      
-      if (collision) {
-        if (isPlayer) {
-          endGame();
-        } else {
-          // Respawn AI after 5 seconds
-          aiRespawnTimers[aiId] = setTimeout(() => {
-            const aiIndex = aiSnakes.findIndex(ai => ai.id === aiId);
-            if (aiIndex !== -1) {
-              aiSnakes.splice(aiIndex, 1);
-              addAI();
-            }
-          }, 5000);
-        }
+      const head = {...snake[0]};
+      head.x += velocity.x;
+      head.y += velocity.y;
+
+      if (
+        head.x < 0 || head.x >= tileCount ||
+        head.y < 0 || head.y >= tileCount ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y) ||
+        barriers.some(b => b.x === head.x && b.y === head.y)
+      ) {
+        gameOver = true;
+        document.getElementById("reset-btn").style.display = "inline-block";
+        document.getElementById("exit-btn").style.display = "inline-block";
         return;
       }
-      
-      // Add new head
-      body.unshift(head);
-      
-      // Check food collision
+
+      snake.unshift(head);
+
       if (head.x === food.x && head.y === food.y) {
-        if (isPlayer) {
-          score += 1;
-          scoreDisplay.textContent = `Score: ${score}`;
-          
-          // Increase speed every 5 points
-          if (score % 5 === 0 && gameSpeed > 50) {
-            gameSpeed -= 10;
-            clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, gameSpeed);
-          }
-        }
+        score += 1;
+        document.getElementById("score").innerText = 'Score: ' + score;
         placeFood();
       } else {
-        // Remove tail if no food eaten
-        body.pop();
+        snake.pop();
       }
-    }
-    
-    // Check for collisions
-    function checkCollision(head, body, isPlayer) {
-      // World boundaries
-      if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
-        return true;
-      }
-      
-      // Barriers
-      if (barriers.some(b => b.x === head.x && b.y === head.y)) {
-        return true;
-      }
-      
-      // Self collision (skip head)
-      for (let i = 1; i < body.length; i++) {
-        if (body[i].x === head.x && body[i].y === head.y) {
-          return true;
-        }
-      }
-      
-      // Player vs AI collisions
-      if (isPlayer) {
-        for (const ai of aiSnakes) {
-          if (ai.body.some(seg => seg.x === head.x && seg.y === head.y)) {
-            return true;
-          }
-        }
-      }
-      
-      return false;
-    }
-    
-    // Update AI direction
-    function updateAI(ai) {
-      const head = ai.body[0];
-      const directions = [
-        { x: 1, y: 0 }, { x: -1, y: 0 },
-        { x: 0, y: 1 }, { x: 0, y: -1 }
-      ];
-      let best = null, bestDist = Infinity;
 
-      directions.forEach(d => {
-        const nx = head.x + d.x, ny = head.y + d.y;
-        const dist = Math.abs(nx - food.x) + Math.abs(ny - food.y);
-        const collision =
-          nx < 0 || ny < 0 || nx >= tileCount || ny >= tileCount ||
-          barriers.some(b => b.x === nx && b.y === ny) ||
-          snake.some(p => p.x === nx && p.y === ny) ||
-          aiSnakes.some(otherAi => 
-            otherAi !== ai && otherAi.body.some(p => p.x === nx && p.y === ny));
-
-        if (!collision && dist < bestDist) {
-          best = d;
-          bestDist = dist;
-        }
-      });
-
-      if (best) {
-        ai.dir.x = best.x;
-        ai.dir.y = best.y;
-      }
+      draw();
     }
-    
-    // Draw game
+
     function draw() {
-      // Clear canvas
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = '#222';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
+      // Draw snake
+      ctx.fillStyle = '#0f0';
+      snake.forEach(seg => ctx.fillRect(seg.x * gridSize, seg.y * gridSize, gridSize, gridSize));
+
+      // Draw food
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+
       // Draw barriers
       ctx.fillStyle = '#555';
-      barriers.forEach(b => {
-        ctx.beginPath();
-        ctx.roundRect(b.x * gridSize, b.y * gridSize, gridSize, gridSize, 5);
-        ctx.fill();
-      });
-      
-      // Draw food with animation
-      const pulse = (Math.sin(Date.now() / 200) * 0.2 + 0.8;
-      ctx.fillStyle = `rgba(255, 50, 50, ${pulse})`;
-      ctx.beginPath();
-      ctx.roundRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize, 8);
-      ctx.fill();
-      
-      // Draw AI snakes
-      aiSnakes.forEach(ai => {
-        ctx.fillStyle = ai.color;
-        ai.body.forEach((seg, i) => {
-          ctx.beginPath();
-          ctx.roundRect(seg.x * gridSize, seg.y * gridSize, gridSize, gridSize, i === 0 ? 8 : 5);
-          ctx.fill();
-        });
-      });
-      
-      // Draw player snake
-      snake.forEach((seg, i) => {
-        if (i === 0) {
-          ctx.fillStyle = '#0f0';
-        } else {
-          const alpha = 0.7 + (0.3 * (1 - i / snake.length));
-          ctx.fillStyle = `rgba(0, 200, 0, ${alpha})`;
-        }
-        ctx.beginPath();
-        ctx.roundRect(seg.x * gridSize, seg.y * gridSize, gridSize, gridSize, i === 0 ? 8 : 5);
-        ctx.fill();
-      });
+      barriers.forEach(b => ctx.fillRect(b.x * gridSize, b.y * gridSize, gridSize, gridSize));
     }
-    
-    // Place food in random position
+
     function placeFood() {
-      let newFood;
-      let validPosition = false;
-      
-      while (!validPosition) {
-        newFood = {
-          x: Math.floor(Math.random() * tileCount),
-          y: Math.floor(Math.random() * tileCount)
-        };
-        
-        validPosition = true;
-        if (snake.some(seg => seg.x === newFood.x && seg.y === newFood.y)) validPosition = false;
-        if (barriers.some(b => b.x === newFood.x && b.y === newFood.y)) validPosition = false;
-        if (aiSnakes.some(ai => ai.body.some(seg => seg.x === newFood.x && seg.y === newFood.y))) validPosition = false;
-      }
-      
-      food = newFood;
+      food = {
+        x: Math.floor(Math.random() * tileCount),
+        y: Math.floor(Math.random() * tileCount)
+      };
     }
-    
-    // Generate barriers
+
     function generateBarriers() {
       barriers = [];
-      const barrierCount = Math.floor(tileCount / 2);
-      
-      for (let i = 0; i < barrierCount; i++) {
-        let newBarrier;
-        let validPosition = false;
-        
-        while (!validPosition) {
-          newBarrier = {
-            x: Math.floor(Math.random() * tileCount),
-            y: Math.floor(Math.random() * tileCount)
-          };
-          
-          validPosition = true;
-          if (snake[0].x === newBarrier.x && snake[0].y === newBarrier.y) validPosition = false;
-          if (food.x === newBarrier.x && food.y === newBarrier.y) validPosition = false;
-        }
-        
-        barriers.push(newBarrier);
+      for (let i = 0; i < 10; i++) {
+        barriers.push({
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount)
+        });
       }
     }
-    
-    // End game
-    function endGame() {
-      gameOver = true;
-      clearInterval(gameInterval);
-      
-      // Update high score
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('wormHighScore', highScore);
-        highScoreDisplay.textContent = `High Score: ${highScore}`;
-      }
-      
-      // Show game over screen
-      finalScoreDisplay.textContent = `Your score: ${score}`;
-      gameOverScreen.style.display = 'flex';
-    }
-    
-    // Reset game
+
     function resetGame() {
-      gameOverScreen.style.display = 'none';
-      startGame(device);
+      snake = [{x: 10, y: 10}];
+      velocity = {x: 0, y: 0};
+      score = 0;
+      gameOver = false;
+      document.getElementById("score").innerText = 'Score: 0';
+      document.getElementById("reset-btn").style.display = "none";
+      document.getElementById("exit-btn").style.display = "none";
+      placeFood();
+      generateBarriers();
+    }
+
+    function turn(dir) {
+      if (dir === 'up' && velocity.y === 0) velocity = {x: 0, y: -1};
+      if (dir === 'down' && velocity.y === 0) velocity = {x: 0, y: 1};
+      if (dir === 'left' && velocity.x === 0) velocity = {x: -1, y: 0};
+      if (dir === 'right' && velocity.x === 0) velocity = {x: 1, y: 0};
+    }
+
+    function handleKeyDown(e) {
+      if (device !== 'desktop') return;
+      if ((e.key === 'ArrowUp' || e.key === 'w') && velocity.y === 0) velocity = {x: 0, y: -1};
+      if ((e.key === 'ArrowDown' || e.key === 's') && velocity.y === 0) velocity = {x: 0, y: 1};
+      if ((e.key === 'ArrowLeft' || e.key === 'a') && velocity.x === 0) velocity = {x: -1, y: 0};
+      if ((e.key === 'ArrowRight' || e.key === 'd') && velocity.x === 0) velocity = {x: 1, y: 0};
     }
     
-    // Exit game
     function exitGame() {
       window.location.href = 'https://serba-ada-tools.vercel.app/';
     }
-    
-    // Handle keyboard input
-    function handleKeyDown(e) {
-      if (device !== 'desktop') return;
-      
-      // Prevent default for arrow keys to avoid page scrolling
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
-        e.preventDefault();
-      }
-      
-      // Queue the next direction to prevent instant 180-degree turns
-      if ((e.key === 'ArrowUp' || e.key === 'w') && velocity.y === 0) {
-        nextDirection = { x: 0, y: -1 };
-      }
-      if ((e.key === 'ArrowDown' || e.key === 's') && velocity.y === 0) {
-        nextDirection = { x: 0, y: 1 };
-      }
-      if ((e.key === 'ArrowLeft' || e.key === 'a') && velocity.x === 0) {
-        nextDirection = { x: -1, y: 0 };
-      }
-      if ((e.key === 'ArrowRight' || e.key === 'd') && velocity.x === 0) {
-        nextDirection = { x: 1, y: 0 };
-      }
-    }
-    
-    // Handle button controls
-    function turn(dir) {
-      if (dir === 'up' && velocity.y === 0) {
-        nextDirection = { x: 0, y: -1 };
-      }
-      if (dir === 'down' && velocity.y === 0) {
-        nextDirection = { x: 0, y: 1 };
-      }
-      if (dir === 'left' && velocity.x === 0) {
-        nextDirection = { x: -1, y: 0 };
-      }
-      if (dir === 'right' && velocity.x === 0) {
-        nextDirection = { x: 1, y: 0 };
-      }
-    }
-    
+
     // Initialize the game
     init();
   </script>
