@@ -16,7 +16,7 @@
       margin-top: 20px;
       border: 5px solid #555;
     }
-    #start-screen, #controls, #reset-btn {
+    #start-screen, #controls, #reset-btn, #exit-btn {
       margin-top: 20px;
     }
     #controls {
@@ -33,16 +33,22 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    #reset-btn {
+    #reset-btn, #exit-btn {
       display: none;
       margin-top: 15px;
       padding: 10px 20px;
-      background: crimson;
-      color: #fff;
       border: none;
       border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
+    }
+    #reset-btn {
+      background: crimson;
+      color: #fff;
+    }
+    #exit-btn {
+      background: #555;
+      color: #fff;
     }
   </style>
 </head>
@@ -67,6 +73,7 @@
   </div>
   <h2 id="score">Score: 0</h2>
   <button id="reset-btn" onclick="resetGame()">Reset</button>
+  <button id="exit-btn" onclick="exitGame()">Exit to Home</button>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -87,8 +94,7 @@
       device = selectedDevice;
       document.getElementById('start-screen').style.display = 'none';
       if (device === 'phone') document.getElementById('controls').style.display = 'flex';
-      placeFood();
-      generateBarriers();
+      resetGame();
       interval = setInterval(gameLoop, 100);
     }
 
@@ -106,6 +112,8 @@
       ) {
         gameOver = true;
         document.getElementById('reset-btn').style.display = 'inline-block';
+        document.getElementById('exit-btn').style.display = 'inline-block';
+        clearInterval(interval);
         return;
       }
 
@@ -140,19 +148,25 @@
     }
 
     function placeFood() {
-      food = {
-        x: Math.floor(Math.random() * tileCount),
-        y: Math.floor(Math.random() * tileCount)
-      };
+      do {
+        food = {
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount)
+        };
+      } while (snake.some(seg => seg.x === food.x && seg.y === food.y) || barriers.some(b => b.x === food.x && b.y === food.y));
     }
 
     function generateBarriers() {
       barriers = [];
       for (let i = 0; i < 10; i++) {
-        barriers.push({
-          x: Math.floor(Math.random() * tileCount),
-          y: Math.floor(Math.random() * tileCount)
-        });
+        let barrier;
+        do {
+          barrier = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+          };
+        } while (snake.some(seg => seg.x === barrier.x && seg.y === barrier.y) || barriers.some(b => b.x === barrier.x && b.y === barrier.y));
+        barriers.push(barrier);
       }
     }
 
@@ -163,8 +177,15 @@
       gameOver = false;
       document.getElementById('score').innerText = 'Score: 0';
       document.getElementById('reset-btn').style.display = 'none';
+      document.getElementById('exit-btn').style.display = 'none';
       placeFood();
       generateBarriers();
+      if (interval) clearInterval(interval);
+      interval = setInterval(gameLoop, 100);
+    }
+
+    function exitGame() {
+      window.location.href = "https://serba-ada-tools.vercel.app/";
     }
 
     function turn(dir) {
