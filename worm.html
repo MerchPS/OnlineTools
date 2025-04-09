@@ -13,8 +13,8 @@
     }
     canvas {
       background: #222;
-      margin-top: 20px;
-      border: 5px solid #555;
+      margin-top: 10px;
+      border: 4px solid #444;
     }
     #start-screen, #controls, #reset-btn {
       margin-top: 20px;
@@ -44,6 +44,13 @@
       font-size: 16px;
       cursor: pointer;
     }
+    #minimap {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: 2px solid #666;
+      background: #000;
+    }
   </style>
 </head>
 <body>
@@ -54,7 +61,8 @@
     <button onclick="initGame('phone')">Phone</button>
   </div>
 
-  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <canvas id="gameCanvas" width="600" height="600"></canvas>
+  <canvas id="minimap" width="150" height="150"></canvas>
   <div id="controls">
     <div>
       <button class="arrow-btn" onclick="turn('up')">⬆️</button>
@@ -71,11 +79,16 @@
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const gridSize = 20;
-    const tileCount = canvas.width / gridSize;
+    const minimapCanvas = document.getElementById('minimap');
+    const minimapCtx = minimapCanvas.getContext('2d');
 
-    let snake, velocity, food, barriers, score, gameOver, device, interval;
-    let started = false;
+    const tileSize = 20;
+    const worldWidth = 150;
+    const worldHeight = 150;
+    const canvasTiles = canvas.width / tileSize;
+
+    let snake, velocity, food, barriers, score, gameOver, device, interval, started;
+    let aiSnakes = [];
 
     function initGame(selectedDevice) {
       device = selectedDevice;
@@ -86,7 +99,7 @@
 
     function resetGame() {
       clearInterval(interval);
-      snake = [{ x: 10, y: 10 }];
+      snake = [{ x: 75, y: 75 }];
       velocity = { x: 0, y: 0 };
       score = 0;
       gameOver = false;
@@ -95,91 +108,133 @@
       document.getElementById('reset-btn').style.display = 'none';
       generateBarriers();
       placeFood();
-      draw();
+      aiSnakes = [genAI(20, 20), genAI(130, 130)];
       interval = setInterval(gameLoop, 100);
     }
 
-    function gameLoop() {
-      if (gameOver || !started) {
-        draw(); // Tetap render untuk tampilkan UI
-        return;
-      }
-
-      const head = { ...snake[0] };
-      head.x += velocity.x;
-      head.y += velocity.y;
-
-      if (
-        head.x < 0 || head.x >= tileCount ||
-        head.y < 0 || head.y >= tileCount ||
-        snake.some(seg => seg.x === head.x && seg.y === head.y) ||
-        barriers.some(b => b.x === head.x && b.y === head.y)
-      ) {
-        gameOver = true;
-        document.getElementById('reset-btn').style.display = 'inline-block';
-        return;
-      }
-
-      snake.unshift(head);
-
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        document.getElementById('score').innerText = 'Score: ' + score;
-        placeFood();
-      } else {
-        snake.pop();
-      }
-
-      draw();
-    }
-
-    function draw() {
-      ctx.fillStyle = '#222';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Barriers
-      ctx.fillStyle = '#555';
-      barriers.forEach(b => ctx.fillRect(b.x * gridSize, b.y * gridSize, gridSize, gridSize));
-
-      // Food
-      ctx.fillStyle = 'red';
-      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
-
-      // Snake
-      ctx.fillStyle = '#0f0';
-      snake.forEach(seg => ctx.fillRect(seg.x * gridSize, seg.y * gridSize, gridSize, gridSize));
+    function genAI(x, y) {
+      return {
+        body: [{ x, y }],
+        dir: { x: 0, y: 0 },
+        color: '#' + Math.floor(Math.random()*16777215).toString(16)
+      };
     }
 
     function placeFood() {
       let valid = false;
       while (!valid) {
         food = {
-          x: Math.floor(Math.random() * tileCount),
-          y: Math.floor(Math.random() * tileCount)
+          x: Math.floor(Math.random() * worldWidth),
+          y: Math.floor(Math.random() * worldHeight)
         };
-        if (
-          !snake.some(s => s.x === food.x && s.y === food.y) &&
-          !barriers.some(b => b.x === food.x && b.y === food.y)
-        ) {
-          valid = true;
-        }
+        valid = true;
       }
     }
 
     function generateBarriers() {
       barriers = [];
-      while (barriers.length < 10) {
-        const b = {
-          x: Math.floor(Math.random() * tileCount),
-          y: Math.floor(Math.random() * tileCount)
-        };
-        if (
-          !snake.some(s => s.x === b.x && s.y === b.y) &&
-          !barriers.some(e => e.x === b.x && e.y === b.y)
-        ) {
-          barriers.push(b);
-        }
+      for (let i = 0; i < 100; i++) {
+        barriers.push({
+          x: Math.floor(Math.random() * worldWidth),
+          y: Math.floor(Math.random() * worldHeight)
+        });
       }
+    }
+
+    function gameLoop() {
+      if (gameOver) return;
+      moveSnake(snake, velocity, true);
+      aiSnakes.forEach(ai => moveSnake(ai.body, ai.dir, false));
+      draw();
+    }
+
+    function moveSnake(body, dir, isPlayer) {
+      if (!started && isPlayer) return;
+      const head = { ...body[0] };
+      head.x += dir.x;
+      head.y += dir.y;
+
+      if (head.x < 0 || head.y < 0 || head.x >= worldWidth || head.y >= worldHeight ||
+          body.some(p => p.x === head.x && p.y === head.y) ||
+          barriers.some(b => b.x === head.x && b.y === head.y)) {
+        if (isPlayer) {
+          gameOver = true;
+          document.getElementById('reset-btn').style.display = 'inline-block';
+        }
+        return;
+      }
+
+      body.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        if (isPlayer) {
+          score++;
+          document.getElementById('score').innerText = 'Score: ' + score;
+        }
+        placeFood();
+      } else {
+        body.pop();
+      }
+
+      if (!isPlayer) updateAIDirection(body, dir);
+    }
+
+    function updateAIDirection(body, dir) {
+      const head = body[0];
+      dir.x = food.x > head.x ? 1 : food.x < head.x ? -1 : 0;
+      dir.y = food.y > head.y ? 1 : food.y < head.y ? -1 : 0;
+    }
+
+    function draw() {
+      const viewSize = canvas.width / tileSize;
+      const camX = Math.max(0, Math.min(worldWidth - viewSize, snake[0].x - Math.floor(viewSize / 2)));
+      const camY = Math.max(0, Math.min(worldHeight - viewSize, snake[0].y - Math.floor(viewSize / 2)));
+
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw barriers
+      ctx.fillStyle = '#555';
+      barriers.forEach(b => drawTile(ctx, b.x, b.y, camX, camY, '#555'));
+
+      // Draw food
+      drawTile(ctx, food.x, food.y, camX, camY, 'red');
+
+      // Draw AI snakes
+      aiSnakes.forEach(ai => ai.body.forEach(p => drawTile(ctx, p.x, p.y, camX, camY, ai.color)));
+
+      // Draw player
+      snake.forEach(p => drawTile(ctx, p.x, p.y, camX, camY, '#0f0'));
+
+      drawMinimap();
+    }
+
+    function drawTile(context, x, y, camX, camY, color) {
+      const drawX = (x - camX) * tileSize;
+      const drawY = (y - camY) * tileSize;
+      if (drawX >= 0 && drawX < canvas.width && drawY >= 0 && drawY < canvas.height) {
+        context.fillStyle = color;
+        context.fillRect(drawX, drawY, tileSize, tileSize);
+      }
+    }
+
+    function drawMinimap() {
+      minimapCtx.fillStyle = '#000';
+      minimapCtx.fillRect(0, 0, 150, 150);
+
+      const scaleX = 150 / worldWidth;
+      const scaleY = 150 / worldHeight;
+
+      minimapCtx.fillStyle = 'red';
+      minimapCtx.fillRect(food.x * scaleX, food.y * scaleY, 3, 3);
+
+      minimapCtx.fillStyle = '#0f0';
+      snake.forEach(p => minimapCtx.fillRect(p.x * scaleX, p.y * scaleY, 2, 2));
+
+      aiSnakes.forEach(ai => {
+        minimapCtx.fillStyle = ai.color;
+        ai.body.forEach(p => minimapCtx.fillRect(p.x * scaleX, p.y * scaleY, 2, 2));
+      });
     }
 
     function turn(dir) {
